@@ -49,7 +49,28 @@ Researched: 2026-11-06. Explored as adjacent problem space. Verdict at bottom.
 
 ## Academic Research Reviewed
 
-### Article: view/507 — Blockchain Healthcare Today Journal
+### [Paper 1] Zhuang et al. 2018 — Blockchain for HIE + Clinical Trial Monitoring
+**File:** `research/papers/zhuang-2018-blockchain-hie-clinical-trials.pdf` | PMC6371378
+
+This is the PMC6371378 article that was CAPTCHA-blocked during initial fetch — read from downloaded PDF.
+
+**Problem named:**
+- HIE systems (CHMIS, RHIO) built for providers; patients lack personal access
+- FDA audit problem: only receives aggregated reports from sponsors — data falsification and human entry errors go undetected between trial sites and sponsors
+- Centralized storage creates data insecurity and poor integration across disparate sources
+
+**Proposed solution:** Private blockchain + Smart Contracts for HIE and clinical trial monitoring
+- RPC server connects multiple EHR databases from different clinical sites
+- Smart Contract ensures transactions only accepted from verified clinical sites → data provenance
+- Multi-level access privileges: monitoring entities, trial sponsors, clinical sponsors, subjects
+
+**Key finding for our project:** Private chain + Smart Contract consent is a viable architecture for multi-stakeholder health data access control. Proof-of-concept validated (simulation, not live trial).
+
+**Citation:** Zhuang, Y., Sheets, L., Shae, Z., Tsai, J. J. P., & Shyu, C. R. (2018). Applying blockchain technology for health information exchange and persistent monitoring for clinical trials. *AMIA Annual Symposium Proceedings*, 2018, 1167–1176. PMC6371378.
+
+---
+
+### [Paper 2] view/507 — Blockchain Healthcare Today Journal
 - **Indian authors**: institutions in Lucknow, Ghaziabad, Mathura, Aligarh + one in Saudi Arabia.
 - **Problem named**: centralized control, privacy breaches, no patient data ownership, can't support decentralized research.
 - **Proposed solution**: permissioned blockchain + ZKP authentication + off-chain storage + tokenomics governance.
