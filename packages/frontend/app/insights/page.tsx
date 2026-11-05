@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useAccount, useReadContract } from "wagmi";
 import { useRouter } from "next/navigation";
 import { CONTRACTS } from "@/lib/contracts";
+import Skeleton from "@/components/Skeleton";
 
 interface RiskScore {
   condition: string;
@@ -41,14 +42,22 @@ const RISK_BAR: Record<string, string> = {
   high:     "bg-red-500",
 };
 
+/** Skeleton placeholder block */
+function Skeleton({ className }: { className?: string }) {
+  return <div className={`animate-shimmer rounded-lg ${className ?? ""}`} />;
+}
+
 export default function InsightsPage() {
   const { address } = useAccount();
   const router = useRouter();
   const [insights, setInsights] = useState<HealthInsights | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
 
-  // Probe sessionStorage for the proof's nullifier_hash to look up genomeCID
+  // Trigger progress bar transitions after mount
+  useEffect(() => { setMounted(true); }, []);
+
   const proofRaw = typeof window !== "undefined" ? sessionStorage.getItem("wld_proof") : null;
   const nullifierHash = proofRaw ? JSON.parse(proofRaw).nullifier_hash : null;
 
@@ -102,11 +111,11 @@ export default function InsightsPage() {
 
   return (
     <main className="min-h-screen px-4 py-10 max-w-2xl mx-auto">
-      <div className="mb-8">
+      <div className="animate-slide-up mb-8">
         <h1 className="text-3xl font-bold text-genome-teal mb-1">Health Insights</h1>
-        <p className="text-gray-400 text-sm">
+        <p className="text-gray-400 text-sm leading-relaxed">
           Computed via{" "}
-          <span className="text-genome-violet font-medium">0G Private Computer</span>
+          <span className="text-genome-violet font-medium">0G Private Compute</span>
           {" "}— your genome CID is processed inside a confidential execution environment.
           Raw data never leaves your encrypted node.
           {insights?.source === "stub" && (
@@ -116,7 +125,7 @@ export default function InsightsPage() {
       </div>
 
       {!genomeCID && (
-        <div className="p-6 rounded-xl bg-genome-card border border-genome-border text-center">
+        <div className="animate-fade-in p-6 rounded-xl bg-genome-card border border-genome-border text-center">
           <p className="text-gray-400 mb-4">No genome registered yet.</p>
           <button
             onClick={() => router.push("/genome")}
@@ -127,30 +136,68 @@ export default function InsightsPage() {
         </div>
       )}
 
+      {/* Loading skeleton */}
       {genomeCID && loading && (
-        <div className="text-gray-400 text-sm animate-pulse">Computing insights via 0G…</div>
+        <div className="animate-fade-in space-y-8">
+          <section>
+            <Skeleton className="h-4 w-40 mb-4" />
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="p-4 rounded-xl bg-genome-card border border-genome-border">
+                  <div className="flex justify-between mb-3">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-4 w-20" />
+                  </div>
+                  <Skeleton className="h-1.5 w-full" />
+                </div>
+              ))}
+            </div>
+          </section>
+          <section>
+            <Skeleton className="h-4 w-40 mb-4" />
+            <div className="space-y-3">
+              {[1, 2].map((i) => (
+                <div key={i} className="p-4 rounded-xl bg-genome-card border border-genome-border">
+                  <Skeleton className="h-4 w-24 mb-2" />
+                  <Skeleton className="h-3 w-48 mb-1" />
+                  <Skeleton className="h-3 w-56" />
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
       )}
 
-      {error && <p className="text-red-400 text-sm">{error}</p>}
+      {error && (
+        <div className="animate-fade-in px-4 py-3 rounded-lg bg-red-900/30 border border-red-800 text-red-400 text-sm">
+          {error}
+        </div>
+      )}
 
       {insights && (
         <div className="space-y-8">
           {/* Risk Scores */}
           <section>
-            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Polygenic Risk Scores</h2>
+            <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">
+              Polygenic Risk Scores
+            </h2>
             <div className="space-y-3">
-              {insights.riskScores.map((r) => (
-                <div key={r.condition} className="p-4 rounded-xl bg-genome-card border border-genome-border">
+              {insights.riskScores.map((r, i) => (
+                <div
+                  key={r.condition}
+                  className="animate-slide-up p-4 rounded-xl bg-genome-card border border-genome-border"
+                  style={{ animationDelay: `${i * 60}ms` }}
+                >
                   <div className="flex items-center justify-between mb-2">
                     <span className="font-medium text-gray-200">{r.condition}</span>
-                    <span className={`text-sm font-semibold ${RISK_COLOR[r.risk]}`}>
+                    <span className={`text-xs font-semibold ${RISK_COLOR[r.risk]}`}>
                       {r.risk.toUpperCase()} · {r.percentile}th percentile
                     </span>
                   </div>
                   <div className="h-1.5 w-full rounded-full bg-genome-border overflow-hidden">
                     <div
-                      className={`h-full rounded-full ${RISK_BAR[r.risk]} transition-all`}
-                      style={{ width: `${r.percentile}%` }}
+                      className={`h-full rounded-full ${RISK_BAR[r.risk]} transition-[width] duration-700 ease-out`}
+                      style={{ width: mounted ? `${r.percentile}%` : "0%" }}
                     />
                   </div>
                   {r.variants && (
@@ -164,10 +211,16 @@ export default function InsightsPage() {
 
           {/* Pharmacogenomics */}
           <section>
-            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Pharmacogenomics</h2>
+            <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">
+              Pharmacogenomics
+            </h2>
             <div className="space-y-3">
-              {insights.pharmacogenomics.map((p) => (
-                <div key={p.gene + p.drug} className="p-4 rounded-xl bg-genome-card border border-genome-border">
+              {insights.pharmacogenomics.map((p, i) => (
+                <div
+                  key={p.gene + p.drug}
+                  className="animate-slide-up p-4 rounded-xl bg-genome-card border border-genome-border"
+                  style={{ animationDelay: `${i * 60}ms` }}
+                >
                   <div className="flex items-start justify-between gap-2 mb-1">
                     <span className="font-medium text-genome-teal">{p.gene}</span>
                     <span className="text-xs text-gray-500 font-mono">{p.variant}</span>
@@ -182,18 +235,20 @@ export default function InsightsPage() {
 
           {/* Ancestry */}
           <section>
-            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Ancestry Composition</h2>
-            <div className="p-4 rounded-xl bg-genome-card border border-genome-border space-y-3">
-              {insights.ancestryMarkers.map((a) => (
-                <div key={a.population}>
+            <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">
+              Ancestry Composition
+            </h2>
+            <div className="animate-slide-up p-4 rounded-xl bg-genome-card border border-genome-border space-y-3">
+              {insights.ancestryMarkers.map((a, i) => (
+                <div key={a.population} style={{ animationDelay: `${i * 50}ms` }}>
                   <div className="flex justify-between text-sm mb-1">
                     <span className="text-gray-300">{a.population}</span>
                     <span className="text-genome-teal">{(a.proportion * 100).toFixed(1)}%</span>
                   </div>
                   <div className="h-1.5 w-full rounded-full bg-genome-border overflow-hidden">
                     <div
-                      className="h-full rounded-full bg-genome-teal transition-all"
-                      style={{ width: `${a.proportion * 100}%` }}
+                      className="h-full rounded-full bg-genome-teal transition-[width] duration-700 ease-out"
+                      style={{ width: mounted ? `${a.proportion * 100}%` : "0%" }}
                     />
                   </div>
                 </div>
