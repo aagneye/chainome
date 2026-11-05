@@ -5,10 +5,46 @@
 :root {
   --bg: #070c18;
   --fg: #dde8f8;
+  --teal: #00c9a7;
+  --anim-fast: 0.15s;
+  --anim-normal: 0.3s;
 }
 
 body {
   background: var(--bg);
   color: var(--fg);
   font-family: system-ui, sans-serif;
+}
+
+/* ── Scrollbar ─────────────────────────────────────────── */
+::-webkit-scrollbar            { width: 6px; height: 6px; }
+::-webkit-scrollbar-track      { background: #0e1424; }
+::-webkit-scrollbar-thumb      { background: #182035; border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: var(--teal); }
+
+/* ── Shimmer skeleton ──────────────────────────────────── */
+.animate-shimmer {
+  background: linear-gradient(90deg, #0e1424 25%, #182035 50%, #0e1424 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+}
+
+/* ── Page transition ───────────────────────────────────── */
+.page-enter {
+  animation: slideUp 0.4s ease-out both;
+}
+
+/* ── Focus ring ────────────────────────────────────────── */
+.focus-ring {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 201, 167, 0.45);
+}
+
+/* ── Glass card ────────────────────────────────────────── */
+.glass-card {
+  background: rgba(14, 20, 36, 0.72);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid #182035;
+  border-radius: 1rem;
 }
