@@ -13,6 +13,12 @@ Problem-first research for ETHGlobal Mumbai 2026. All evidence gathered before i
 | [05-regulatory-pipeline.md](./05-regulatory-pipeline.md) | FDA RWE, EMA EU CTR, ICH GCP, CDISC, where blockchain fits regulatory stack | Complete |
 | [06-privacy-compute.md](./06-privacy-compute.md) | Federated learning (MELLODDY), DP, FHE/MPC, blockchain clinical trial precedents | Complete |
 | [07-worldchain-market.md](./07-worldchain-market.md) | WorldChain tech (OP Stack L2), global RWD market, prior marketplace failures, prize fit | Complete |
+| [08-idea-evaluation.md](./08-idea-evaluation.md) | 4 candidate builds scored /10 + sponsor-suggested bridge-agent review | Complete |
+| [09-proofofrupee.md](./09-proofofrupee.md) | ZK credit from UPI income + Anon Aadhaar: problem, architecture, threat model, judge Q&A | Complete |
+| [10-health-security-landscape.md](./10-health-security-landscape.md) | 10 health-tech security problem areas with incidents + top-5 hackathon ranking | Complete |
+| [11-medicine-quality-ledger.md](./11-medicine-quality-ledger.md) | Coldrif case, existing drug-testing rules, independent-lab ledger, adoption path | Complete |
+
+Companion PDFs from the ideation sessions are in [assets/](./assets/).
 
 ## Working Hypothesis
 
@@ -61,4 +67,3 @@ ON-CHAIN PUBLICATION
 - [ ] Design doc → `docs/design.md` (full system architecture)
 - [ ] Map to specific sponsor track criteria
 - [ ] `feature/` branch from `dev` → start building
->>>>>>> research/healthcare-genome-records
