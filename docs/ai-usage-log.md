@@ -15,6 +15,8 @@ Required for ETHGlobal hackathon submission transparency.
 | **WebFetch** | — | Fetching specific URLs (academic papers, official docs) |
 | **GitHub CLI (gh)** | — | PR creation, branch management |
 | **Bash/Git** | — | Local git operations, file management |
+| **Claude Code (desktop app)** | Claude Opus 5.5 | Session 3 — ideation, scoring, health-track research, PDFs, research commits |
+| **Headless Google Chrome** | — | Printing HTML to the two companion PDFs (Session 3) |
 
 ---
 
@@ -134,6 +136,121 @@ Required for ETHGlobal hackathon submission transparency.
 
 ---
 
+### 2026-11-05 → 2026-11-06 — Session 3: Ideation, Scoring + Health-Track Research
+
+Run by a second team member in the Claude Code desktop app (Claude Opus 5.5). No subagents were dispatched; all research ran in the main session.
+
+#### Prompt 10
+> "Hey we are at ETH Global and we wanna build something thats going to win us this event mention some of the past winers ideas and also something that we can make ourselves. it needs to be extraordinary."
+
+**Tools used:** WebSearch ×2 (past ETHGlobal finalists; event sponsors/prizes)
+**Output:** Past-finalist patterns (Bangkok 2024, Buenos Aires 2025, Taipei 2025) and four candidate ideas: ProofOfRupee, AgentBazaar, Ghost Ledger, Wildcard.
+
+---
+
+#### Prompt 11
+> "Expand the ideas you curated make sure they are worthy to be built and possible at the same time rate each of them out of 10 as well. Make them into a pdf"
+
+**Tools used:** `anthropic-skills:pdf` skill, Write (HTML), headless Chrome (print to PDF), Read (render check)
+**Output:** `ETHGlobal_Mumbai_Idea_Book.pdf` (9 pages) — feasibility-weighted rubric; ProofOfRupee 8.4, AgentBazaar 8.0, Wildcard 7.1, Ghost Ledger 6.4. Python PDF libraries couldn't be installed (venue wifi timed out), so the PDF was printed from HTML.
+
+---
+
+#### Prompts 12–13 (ProofOfRupee explanations)
+> (pasted ProofOfRupee summary) "Explain this idea with the help of a simple example so that i understand the whole process"
+
+**Tools used:** None (model knowledge)
+**Output:** Step-by-step walkthrough using an example user (Priya, a freelance designer).
+
+---
+
+#### Prompt 14
+> "...one from chainlink ... a simple problem about bridging ... we find the best network with the help of an agent one from one inch ... chainlink for the price change logging ... i want your unbiased opinion on it."
+
+**Tools used:** None (model knowledge)
+**Output:** Rated ≈5.9/10 as described (existing aggregators and intent-based bridges already cover it; Chainlink a forced fit). Proposed stronger variants and folding both sponsors into ProofOfRupee instead.
+
+---
+
+#### Prompt 15
+> "another track that we are looking into is blockchain + health tech so what i want from you is not the ideas but context about how many security issues that are very very relevant in todays world and in the upcoming developing economy..."
+
+**Tools used:** WebSearch ×3 (DPDP Rules 2025, Coldrif death toll, ABHA account count)
+**Output:** 10 health-tech security problem areas with incidents, developing-economy amplifiers, and a "where blockchain helps" filter.
+
+---
+
+#### Prompt 16
+> "can you rank them out of 10 from the hackathons persepective just select the top 5"
+
+**Tools used:** None
+**Output:** Top 5: counterfeit medicines 8.4, credentials/prescriptions 8.2, scheme fraud 7.4, consent 7.3, AI provenance 7.3.
+
+---
+
+#### Prompts 17–27 (counterfeit-medicine problem refinement)
+Human-led questioning that shaped the medicine-ledger concept:
+- "Explain this idea with an eg" · "give it in one paragraph" · "in two lines for each tell me the problem, the solution" · "Lets take a very simple eg in a paragrap"
+- "so right now there isn't an existing system solving this issue"
+- "...pharmas or the cros ... human trials ... will there still be a chance of poisoning or am i entirely wrong"
+- "including this point also reform the problem and the idea" → "or just remove the point and give me the original problem and the solution"
+- "Who conducts the safety tests for these companies"
+- "I don't get the solution can you explain it a bit more"
+
+**Tools used:** None (model knowledge)
+**Output:** Problem/solution wording, the exam analogy, the trials-vs-batch-testing clarification, and the who-tests breakdown.
+
+---
+
+#### Prompt 28
+> "So i want the core problem and solution as a pdf and below that you can provide an example related this in the pdf itself so that it is better to understand"
+
+**Tools used:** Write (HTML), headless Chrome, Read (render check), Bash (spacing fix + re-print)
+**Output:** `Safe_Medicine_Ledger.pdf` (2 pages).
+
+---
+
+#### Prompts 29–33 (adoption and enforcement)
+- "will individual labs be willing to test this out and wouldn't this mean that it turns out to be an imposing layer..."
+- "is there an FDA rule currently that might be there but none of them are following..."
+- "since they already aren't following the rules would it actually matter if we build another verification thing like this"
+- "is it possible to talk to the government about this and start from them..."
+- "as a hackathon level project what would you rate this"
+
+**Tools used:** WebSearch ×2 (Coldrif plant inspection violations; Revised Schedule M MSME deadline)
+**Output:** Lab-payment pool and risk-based sampling design; evidence that the rules exist but aren't verifiably followed (Coldrif plant: 39 critical + 325 major violations, untested propylene glycol); the "gatekeeper" requirement and the sample-swap fix; government adoption path; score ≈7.9 (≈8.5 in a health track).
+
+---
+
+#### Prompts 34–35 (ProofOfRupee deep dive)
+> "You want the highest overall score and you're strong in ZK and cryptography — Lets expand on this problem and its potential solution" · "the problem the solution and then a simple eg all in about three paragraphs total"
+
+**Tools used:** None (model knowledge)
+**Output:** Full ProofOfRupee write-up (existing systems incl. Account Aggregator, seven layers, threat model, regulation, judge Q&A) and a three-paragraph summary.
+
+---
+
+#### Prompt 36
+> "https://github.com/aagneye/ethglobal_mumbai_2026. clon this repo. fetch all the branches and commits first ... create branch from dev and work on it and then open pr to dev ... commit allthese research we have done with proper evidences and citatiosn clearly and concljsions"
+
+**Tools used:** Bash/Git, WebSearch ×20 (verifying previously uncited claims), Write ×4, Edit, gh CLI
+**Output:**
+- Branch `research/ideation-evaluation` from `dev`; 5 Conventional Commits; PR #5 → `dev`
+- `research/08-idea-evaluation.md`, `09-proofofrupee.md`, `10-health-security-landscape.md`, `11-medicine-quality-ledger.md`, plus both PDFs in `research/assets/`
+- 82 linked citations; 35 claims flagged ⚠️ as unverified
+- Verification corrected two earlier claims: Star Health "31M" figure unsourced (Reuters: "millions"); cough syrup export testing reportedly relaxed Oct 2024
+- Removed a stray merge-conflict marker from `research/00-index.md`
+
+---
+
+#### Prompt 37
+> "Yes, log it" (in reply to: add this session to the AI usage log?)
+
+**Tools used:** Bash/Git, Edit, gh CLI
+**Output:** This Session 3 section, on branch `docs/ai-usage-log-session-3`.
+
+---
+
 ## AI-Generated vs Human-Authored Content
 
 | File | AI-generated | Human-directed |
@@ -143,6 +260,9 @@ Required for ETHGlobal hackathon submission transparency.
 | `README.md` | AI-generated | — |
 | `docs/ai-usage-log.md` | AI-generated (this file) | Prompted by human |
 | Ecosystem architecture | AI synthesized from research | Core concept (patient layer + institutional layer + on-chain publication) from human |
+| `research/08-11-*.md` | Drafted by AI from session discussion + web verification | Track choices (health tech), sponsor input (Chainlink/1inch booth), critical questions that shaped the medicine ledger (testing, enforcement, government path) |
+| `research/assets/*.pdf` | AI-generated | Requested by human |
+| Idea scores (/10) | AI judgement on an AI-proposed rubric | Human asked for ratings; not yet re-scored against confirmed tracks |
 
 ---
 
