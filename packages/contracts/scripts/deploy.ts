@@ -43,6 +43,12 @@ async function main() {
   await consent.waitForDeployment();
   console.log(`ConsentManager:      ${await consent.getAddress()}`);
 
+  // 5. ProtocolRegistry
+  const ProtocolRegistry = await ethers.getContractFactory("ProtocolRegistry");
+  const protocols = await ProtocolRegistry.deploy();
+  await protocols.waitForDeployment();
+  console.log(`ProtocolRegistry:    ${await protocols.getAddress()}`);
+
   // Grant MINTER_ROLE to registry + vault
   const MINTER_ROLE = await token.MINTER_ROLE();
   await token.grantRole(MINTER_ROLE, await registry.getAddress());
@@ -54,6 +60,7 @@ async function main() {
   console.log(`NEXT_PUBLIC_GENOME_REGISTRY=${await registry.getAddress()}`);
   console.log(`NEXT_PUBLIC_RECORD_VAULT=${await vault.getAddress()}`);
   console.log(`NEXT_PUBLIC_CONSENT_MANAGER=${await consent.getAddress()}`);
+  console.log(`NEXT_PUBLIC_PROTOCOL_REGISTRY=${await protocols.getAddress()}`);
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });

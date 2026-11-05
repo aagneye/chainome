@@ -15,7 +15,6 @@
     "typescript": "^5.4.0"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^5.0.0",
-    "@worldcoin/world-id-contracts": "^0.1.0"
+    "@openzeppelin/contracts": "^5.0.0"
   }
 }

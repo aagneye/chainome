@@ -28,14 +28,12 @@ contract ConsentManager {
     event ConsentGranted(
         address indexed patient,
         address indexed institution,
-        bytes32 dataTypes,
         uint64  expiry,
-        uint256 timestamp
+        bytes32 dataTypes
     );
     event ConsentRevoked(
         address indexed patient,
-        address indexed institution,
-        uint256 timestamp
+        address indexed institution
     );
 
     // ── External ─────────────────────────────────────────────────────────────
@@ -57,7 +55,7 @@ contract ConsentManager {
             grantedAt: block.timestamp
         });
 
-        emit ConsentGranted(msg.sender, institution, dataTypes, expiry, block.timestamp);
+        emit ConsentGranted(msg.sender, institution, expiry, dataTypes);
     }
 
     /// @notice Revoke consent from an institution.
@@ -65,7 +63,7 @@ contract ConsentManager {
         ConsentGrant storage grant = consents[msg.sender][institution];
         if (!grant.active) revert NotGranted();
         grant.active = false;
-        emit ConsentRevoked(msg.sender, institution, block.timestamp);
+        emit ConsentRevoked(msg.sender, institution);
     }
 
     /// @notice Check whether an institution has valid, unexpired consent from a patient.
