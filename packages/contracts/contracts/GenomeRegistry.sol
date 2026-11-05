@@ -3,6 +3,7 @@ pragma solidity ^0.8.26;
 
 import "./interfaces/IWorldID.sol";
 import "./libs/ByteHasher.sol";
+import "./HealthToken.sol";
 
 /// @title GenomeRegistry
 /// @notice One genome CID per Orb-verified human. World ID Incognito Action gate.
@@ -16,9 +17,10 @@ contract GenomeRegistry {
     error InvalidCID();
 
     // ── State ────────────────────────────────────────────────────────────────
-    IWorldID public immutable worldId;
-    uint256 public immutable externalNullifierHash;
-    uint256 internal constant GROUP_ID = 1; // 1 = Orb-verified
+    IWorldID    public immutable worldId;
+    HealthToken public immutable token;
+    uint256     public immutable externalNullifierHash;
+    uint256     internal constant GROUP_ID = 1; // 1 = Orb-verified
 
     mapping(uint256 nullifierHash => bool) public nullifierUsed;
     mapping(uint256 nullifierHash => string) public genomeCID;
@@ -37,8 +39,10 @@ contract GenomeRegistry {
     /// @param _worldId  Deployed World ID router on this chain.
     /// @param _appId    World ID app ID (e.g. "app_staging_abc123").
     /// @param _action   Action string (e.g. "genome_submission").
-    constructor(IWorldID _worldId, string memory _appId, string memory _action) {
+    /// @param _token    HealthToken to mint GENOME_REWARD on success.
+    constructor(IWorldID _worldId, string memory _appId, string memory _action, HealthToken _token) {
         worldId = _worldId;
+        token   = _token;
         externalNullifierHash = abi
             .encodePacked(abi.encodePacked(_appId).hashToField(), _action)
             .hashToField();
@@ -74,6 +78,8 @@ contract GenomeRegistry {
         genomeCID[nullifierHash] = cid;
         submittedAt[nullifierHash] = block.timestamp;
         unchecked { ++totalSubmissions; }
+
+        token.mint(signal, token.GENOME_REWARD());
 
         emit GenomeSubmitted(nullifierHash, cid, block.timestamp);
     }

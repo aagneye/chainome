@@ -56,4 +56,9 @@ contract RecordVault {
     function recordCount(address patient) external view returns (uint256) {
         return _records[patient].length;
     }
+
+    /// @notice Alias for dashboard compatibility.
+    function getRecordCount(address patient) external view returns (uint256) {
+        return _records[patient].length;
+    }
 }

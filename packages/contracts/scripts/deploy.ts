@@ -21,13 +21,13 @@ async function main() {
 
   // 1. HealthToken
   const HealthToken = await ethers.getContractFactory("HealthToken");
-  const token = await HealthToken.deploy(deployer.address);
+  const token = await HealthToken.deploy();
   await token.waitForDeployment();
   console.log(`HealthToken (GNM):   ${await token.getAddress()}`);
 
   // 2. GenomeRegistry
   const GenomeRegistry = await ethers.getContractFactory("GenomeRegistry");
-  const registry = await GenomeRegistry.deploy(worldIdRouter, APP_ID, ACTION);
+  const registry = await GenomeRegistry.deploy(worldIdRouter, APP_ID, ACTION, await token.getAddress());
   await registry.waitForDeployment();
   console.log(`GenomeRegistry:      ${await registry.getAddress()}`);
 

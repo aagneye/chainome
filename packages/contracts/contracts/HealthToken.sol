@@ -13,8 +13,8 @@ contract HealthToken is ERC20, AccessControl {
     uint256 public constant GENOME_REWARD  = 500 ether; // 500 GNM per genome upload
     uint256 public constant RECORD_REWARD  =  10 ether; // 10 GNM per record upload
 
-    constructor(address admin) ERC20("GenomeChain", "GNM") {
-        _grantRole(DEFAULT_ADMIN_ROLE, admin);
+    constructor() ERC20("GenomeChain", "GNM") {
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
     /// @notice Mint GNM to a recipient. Only MINTER_ROLE.
