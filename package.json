@@ -1,0 +1,11 @@
+{
+  "name": "genomechain",
+  "private": true,
+  "packageManager": "pnpm@9.0.0",
+  "scripts": {
+    "contracts": "pnpm --filter contracts",
+    "frontend": "pnpm --filter frontend",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test"
+  }
+}
