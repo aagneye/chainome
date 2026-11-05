@@ -1,0 +1,848 @@
+<title>GenomeChain Ecosystem Flow</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:ital,wght@0,400;0,500;1,400&display=swap">
+
+<style>
+/* Layout: vertical flow, 5 layers, expandable detail on click, two-column flow connector */
+:root {
+  --bg:              #070c18;
+  --bg-layer:        #0c1220;
+  --bg-card:         #101828;
+  --bg-hover:        #16213a;
+  --fg:              #dde8f8;
+  --fg-muted:        #6b80a0;
+  --fg-dim:          #2e3f5c;
+  --border:          #182035;
+  --border-bright:   #263554;
+
+  --patient:         #00c9a7;
+  --patient-bg:      rgba(0,201,167,.10);
+  --patient-border:  rgba(0,201,167,.30);
+  --chain:           #38bdf8;
+  --chain-bg:        rgba(56,189,248,.09);
+  --chain-border:    rgba(56,189,248,.28);
+  --institutional:   #a78bfa;
+  --inst-bg:         rgba(167,139,250,.09);
+  --inst-border:     rgba(167,139,250,.28);
+  --regulatory:      #4ade80;
+  --reg-bg:          rgba(74,222,128,.08);
+  --reg-border:      rgba(74,222,128,.26);
+  --publication:     #60a5fa;
+  --pub-bg:          rgba(96,165,250,.08);
+  --pub-border:      rgba(96,165,250,.25);
+  --token:           #fbbf24;
+  --outcome:         #f472b6;
+
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  padding-left:  max(16px, env(safe-area-inset-left,  0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: env(safe-area-inset-top, 0px) env(safe-area-inset-bottom, 0px);
+}
+
+/* ── TYPOGRAPHY ── */
+h1, h2, h3, h4, .label { font-family: 'Space Grotesk', system-ui, sans-serif; }
+h1 { font-size: clamp(1.4rem, 4vw, 2rem); font-weight: 700; letter-spacing: -.02em; }
+h2 { font-size: 1rem; font-weight: 600; }
+h3 { font-size: .85rem; font-weight: 600; }
+.label {
+  font-size: .68rem; font-weight: 600; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--fg-muted);
+}
+
+/* ── SITE HEADER ── */
+.site-header {
+  padding-block: 32px 20px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 36px;
+}
+.header-top {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 16px; flex-wrap: wrap;
+}
+.header-badge {
+  display: inline-block;
+  background: rgba(0,201,167,.12);
+  border: 1px solid var(--patient-border);
+  color: var(--patient);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: .68rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+  padding: 4px 10px; border-radius: 20px;
+  margin-bottom: 10px;
+}
+.header-sub {
+  color: var(--fg-muted); max-width: 60ch; margin-top: 6px;
+  font-size: .88rem;
+}
+
+/* ── FLOW WRAPPER ── */
+.flow {
+  display: flex; flex-direction: column; align-items: center; gap: 0;
+  max-width: 820px; margin: 0 auto; padding-bottom: 60px;
+}
+
+/* ── LAYER CARDS ── */
+.layer {
+  width: 100%; border-radius: 12px; overflow: hidden;
+  border: 1px solid var(--border);
+  transition: border-color .2s;
+}
+.layer:hover { border-color: var(--border-bright); }
+
+.layer-header {
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px 20px; cursor: pointer;
+  user-select: none;
+  transition: background .15s;
+}
+.layer-header:hover { background: var(--bg-hover); }
+
+.layer-icon {
+  width: 38px; height: 38px; border-radius: 9px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem;
+}
+.layer-meta { flex: 1; min-width: 0; }
+.layer-name { font-size: .95rem; font-weight: 600; }
+.layer-role { font-size: .75rem; color: var(--fg-muted); }
+.layer-toggle {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--bg-hover); border: 1px solid var(--border-bright);
+  display: flex; align-items: center; justify-content: center;
+  font-size: .7rem; color: var(--fg-muted); flex-shrink: 0;
+  transition: transform .2s, background .2s;
+}
+.layer.open .layer-toggle { transform: rotate(180deg); background: var(--border-bright); }
+
+.layer-summary {
+  padding: 0 20px 16px 72px;
+  display: flex; gap: 8px; flex-wrap: wrap;
+}
+.chip {
+  font-size: .72rem; padding: 3px 9px; border-radius: 20px;
+  background: var(--bg-hover); border: 1px solid var(--border-bright);
+  color: var(--fg-muted);
+}
+
+.layer-detail {
+  display: none; padding: 0 20px 20px;
+  border-top: 1px solid var(--border);
+}
+.layer.open .layer-detail { display: block; }
+
+/* Layer color themes */
+.layer-patient  { background: var(--bg-layer); }
+.layer-patient  .layer-icon { background: var(--patient-bg); color: var(--patient); }
+.layer-patient  .layer-name { color: var(--patient); }
+.layer-patient.open { border-color: var(--patient-border); }
+
+.layer-chain    { background: var(--bg-layer); }
+.layer-chain    .layer-icon { background: var(--chain-bg); color: var(--chain); }
+.layer-chain    .layer-name { color: var(--chain); }
+.layer-chain.open { border-color: var(--chain-border); }
+
+.layer-inst     { background: var(--bg-layer); }
+.layer-inst     .layer-icon { background: var(--inst-bg); color: var(--institutional); }
+.layer-inst     .layer-name { color: var(--institutional); }
+.layer-inst.open { border-color: var(--inst-border); }
+
+.layer-reg      { background: var(--bg-layer); }
+.layer-reg      .layer-icon { background: var(--reg-bg); color: var(--regulatory); }
+.layer-reg      .layer-name { color: var(--regulatory); }
+.layer-reg.open { border-color: var(--reg-border); }
+
+.layer-pub      { background: var(--bg-layer); }
+.layer-pub      .layer-icon { background: var(--pub-bg); color: var(--publication); }
+.layer-pub      .layer-name { color: var(--publication); }
+.layer-pub.open { border-color: var(--pub-border); }
+
+/* ── CONNECTORS ── */
+.connector {
+  display: flex; flex-direction: column; align-items: center; gap: 0;
+  padding: 2px 0; position: relative; z-index: 1;
+}
+.connector-line {
+  width: 2px; height: 24px;
+}
+.connector-label {
+  font-size: .68rem; font-weight: 500; letter-spacing: .07em; text-transform: uppercase;
+  color: var(--fg-dim);
+  background: var(--bg);
+  padding: 3px 10px; border-radius: 20px;
+  border: 1px solid var(--border);
+  white-space: nowrap;
+}
+.connector-arrow { font-size: .8rem; color: var(--fg-dim); line-height: 1; }
+
+/* ── DETAIL GRIDS ── */
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+.detail-card {
+  background: var(--bg-card); border-radius: 8px;
+  padding: 12px 14px; border: 1px solid var(--border);
+}
+.detail-card h4 { font-size: .82rem; font-weight: 600; margin-bottom: 4px; }
+.detail-card p  { font-size: .78rem; color: var(--fg-muted); line-height: 1.5; }
+
+/* ── OUTCOMES SECTION (special treatment) ── */
+.outcomes-header {
+  margin-top: 20px; margin-bottom: 10px;
+  display: flex; align-items: center; gap: 8px;
+}
+.outcomes-header h3 { color: var(--outcome); }
+.outcomes-badge {
+  font-size: .68rem; padding: 2px 8px; border-radius: 20px;
+  background: rgba(244,114,182,.12); color: var(--outcome);
+  border: 1px solid rgba(244,114,182,.3);
+  font-family: 'Space Grotesk', sans-serif; font-weight: 600; letter-spacing: .05em;
+}
+.outcome-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+.outcome-card {
+  background: rgba(244,114,182,.05);
+  border: 1px solid rgba(244,114,182,.18);
+  border-radius: 8px; padding: 12px 14px;
+}
+.outcome-card .oc-icon { font-size: 1.1rem; margin-bottom: 6px; }
+.outcome-card h4 { font-size: .82rem; font-weight: 600; margin-bottom: 4px; color: var(--fg); }
+.outcome-card p  { font-size: .76rem; color: var(--fg-muted); line-height: 1.45; }
+
+/* ── PROOF CALLOUT ── */
+.proof-box {
+  margin-top: 14px;
+  background: rgba(0,201,167,.06);
+  border: 1px solid var(--patient-border);
+  border-radius: 8px; padding: 12px 14px;
+}
+.proof-box .proof-label {
+  font-size: .68rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--patient); margin-bottom: 4px;
+  font-family: 'Space Grotesk', sans-serif;
+}
+.proof-box p { font-size: .78rem; color: var(--fg-muted); }
+
+/* ── DATA FLOW ANNOTATIONS ── */
+.flow-note {
+  display: flex; gap: 8px; align-items: flex-start;
+  margin-top: 10px;
+}
+.flow-note-icon {
+  width: 20px; height: 20px; flex-shrink: 0;
+  border-radius: 50%; background: var(--bg-hover);
+  display: flex; align-items: center; justify-content: center;
+  font-size: .65rem; margin-top: 1px;
+}
+.flow-note p { font-size: .78rem; color: var(--fg-muted); }
+.flow-note strong { color: var(--fg); }
+
+/* ── SECTION HEADINGS inside detail ── */
+.detail-section-title {
+  font-size: .78rem; font-weight: 600; letter-spacing: .07em; text-transform: uppercase;
+  color: var(--fg-muted); margin: 18px 0 8px; padding-top: 14px;
+  border-top: 1px solid var(--border);
+  font-family: 'Space Grotesk', sans-serif;
+}
+.detail-section-title:first-of-type { margin-top: 16px; border-top: none; padding-top: 0; }
+
+/* ── REGULATORY TABLE ── */
+.reg-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: .78rem; }
+.reg-table th, .reg-table td { padding: 7px 10px; text-align: left; border-bottom: 1px solid var(--border); }
+.reg-table th { color: var(--fg-muted); font-weight: 500; font-size: .7rem; letter-spacing: .05em; text-transform: uppercase; }
+.reg-table td:first-child { font-weight: 500; color: var(--fg); }
+.reg-table .yes { color: var(--regulatory); }
+.reg-table .no  { color: #ef4444; }
+.reg-table .partial { color: var(--token); }
+.reg-table-wrap { overflow-x: auto; }
+
+/* ── ANCESTRY VIZ ── */
+.ancestry-vis {
+  margin-top: 14px; border-radius: 8px; overflow: hidden;
+  background: var(--bg-card); border: 1px solid var(--border);
+  padding: 16px;
+}
+.anc-title { font-size: .8rem; font-weight: 600; color: var(--publication); margin-bottom: 12px; }
+.anc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.anc-pop {
+  border-radius: 6px; padding: 8px 6px; text-align: center;
+  border: 1px solid var(--border);
+  font-size: .68rem; color: var(--fg-muted);
+}
+.anc-pop .pop-name { font-weight: 600; font-size: .72rem; color: var(--fg); display: block; margin-bottom: 2px; }
+.anc-pop .pop-bar  {
+  height: 3px; border-radius: 2px; margin-top: 6px;
+  background: var(--publication);
+}
+
+/* ── TOKEN FLOW ── */
+.token-row {
+  display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;
+}
+.token-pill {
+  display: flex; align-items: center; gap: 6px;
+  background: rgba(251,191,36,.08); border: 1px solid rgba(251,191,36,.25);
+  border-radius: 20px; padding: 5px 10px;
+  font-size: .75rem; color: var(--token);
+}
+
+/* ── FL DIAGRAM ── */
+.fl-diagram {
+  display: flex; align-items: center; gap: 10px;
+  flex-wrap: wrap; margin-top: 10px;
+}
+.fl-node {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 8px; padding: 8px 12px; text-align: center;
+  font-size: .72rem;
+}
+.fl-node .fl-label { color: var(--fg-muted); }
+.fl-node .fl-name { font-weight: 600; font-size: .78rem; color: var(--fg); }
+.fl-arrow { color: var(--fg-dim); font-size: 1.2rem; }
+
+/* ── TIMELINE CONNECTOR (back to patient) ── */
+.return-connector {
+  position: relative;
+  width: 100%; padding: 20px 0;
+  display: flex; justify-content: center; align-items: center;
+}
+.return-line {
+  width: 2px; height: 50px;
+  background: linear-gradient(to top, var(--publication), var(--patient));
+}
+.return-label {
+  position: absolute;
+  font-size: .68rem; font-weight: 600; letter-spacing: .07em; text-transform: uppercase;
+  color: var(--publication);
+  background: var(--bg);
+  padding: 3px 10px; border-radius: 20px;
+  border: 1px solid var(--pub-border);
+}
+
+/* ── FOOTER LEGEND ── */
+.legend {
+  max-width: 820px; margin: 0 auto; padding: 24px 0;
+  border-top: 1px solid var(--border);
+  display: flex; gap: 20px; flex-wrap: wrap;
+}
+.legend-item {
+  display: flex; align-items: center; gap: 7px;
+  font-size: .75rem; color: var(--fg-muted);
+}
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+/* Mobile adjustments */
+@media (max-width: 540px) {
+  .layer-summary { padding-left: 20px; }
+  .detail-grid, .outcome-cards { grid-template-columns: 1fr; }
+  .anc-grid { grid-template-columns: repeat(2, 1fr); }
+  .fl-diagram { justify-content: center; }
+}
+</style>
+
+<!-- SITE HEADER -->
+<header class="site-header">
+  <div class="header-badge">ETHGlobal Mumbai 2026 — Architecture Map</div>
+  <div class="header-top">
+    <div>
+      <h1>GenomeChain<br>Ecosystem Flow</h1>
+      <p class="header-sub">Full data flow: patient genome + records → federated institutional research → FDA/EMA regulatory gate → findings back to patients. Click each layer to expand.</p>
+    </div>
+  </div>
+</header>
+
+<!-- MAIN FLOW -->
+<div class="flow">
+
+  <!-- ══ LAYER 1: PATIENT ══ -->
+  <div class="layer layer-patient" id="L1">
+    <div class="layer-header" onclick="toggle('L1')">
+      <div class="layer-icon">🧬</div>
+      <div class="layer-meta">
+        <div class="layer-name">The Person</div>
+        <div class="layer-role">World ID verified · Public-chain actor</div>
+      </div>
+      <div class="layer-toggle">▼</div>
+    </div>
+    <div class="layer-summary">
+      <span class="chip">Orb-verified identity</span>
+      <span class="chip">Genome uploaded once</span>
+      <span class="chip">Medical records accumulate</span>
+      <span class="chip">Data sovereign</span>
+    </div>
+    <div class="layer-detail">
+      <p class="detail-section-title">Entry &amp; Inputs</p>
+      <div class="detail-grid">
+        <div class="detail-card">
+          <h4 style="color:var(--patient)">World ID Orb Verification</h4>
+          <p>Iris photographed → IrisCode (hash only) → ZKP issued. <code>nullifier_hash</code> = one stable anonymous ID per person. 18M Orb-verified globally. India Orb paused since Dec 2023 — use staging/simulator for hackathon.</p>
+        </div>
+        <div class="detail-card">
+          <h4 style="color:var(--patient)">Genome Upload (once)</h4>
+          <p>SNP chip data ~1–2MB. Immutable base — genome doesn't change. Incognito Action <code>"genome_submission"</code>: each nullifier gets exactly one slot. Smart contract rejects duplicates. No prior marketplace solved this Sybil problem.</p>
+        </div>
+        <div class="detail-card">
+          <h4 style="color:var(--patient)">Medical Records (ongoing)</h4>
+          <p>Bills, prescriptions, lab reports, X-rays, MRI scans, ECGs. Upload from paper photo (OCR → NLP → structured) or PDF. Cross-hospital, cross-country. Patient owns every file.</p>
+        </div>
+      </div>
+
+      <!-- OUTCOMES — the main question -->
+      <div class="outcomes-header">
+        <h3>What the Person Gets</h3>
+        <span class="outcomes-badge">Trustable Outputs</span>
+      </div>
+      <div class="outcome-cards">
+        <div class="outcome-card">
+          <div class="oc-icon">🌐</div>
+          <h4>Lifetime Health Passport</h4>
+          <p>Portable, cryptographically verifiable record. Any hospital, any country. No more starting from zero at each provider. Patient holds the key.</p>
+        </div>
+        <div class="outcome-card">
+          <div class="oc-icon">📊</div>
+          <h4>Genetic Risk Profile</h4>
+          <p>Polygenic risk scores from SNP chip: cardiovascular (LDL genes), type 2 diabetes (TCF7L2 variants), cancer susceptibility (BRCA1/2, PALB2). Scores update as reference cohorts grow.</p>
+        </div>
+        <div class="outcome-card">
+          <div class="oc-icon">💊</div>
+          <h4>Pharmacogenomics Map</h4>
+          <p>Which drug classes are likely effective or toxic for <em>your</em> genome. CYP2D6, CYP2C19 variants determine codeine/clopidogrel metabolism. Avoid adverse drug reactions before they happen.</p>
+        </div>
+        <div class="outcome-card">
+          <div class="oc-icon">🌍</div>
+          <h4>Ancestry Health Lineage</h4>
+          <p>Population-specific disease susceptibility. South Asian genomes: elevated T2D + cardiac risk at lower BMI. As platform scales, every ancestry gets its own reference cohort and risk model.</p>
+        </div>
+        <div class="outcome-card">
+          <div class="oc-icon">📋</div>
+          <h4>AI Health Timeline</h4>
+          <p>All uploaded records compiled into a dated, normalized health story. AI summarizes: "Your blood pressure trend shows increasing systolic over 3 years." Clinically useful, not just a file dump.</p>
+        </div>
+        <div class="outcome-card">
+          <div class="oc-icon">🔔</div>
+          <h4>Research Alerts</h4>
+          <p>When an FDA/EMA-approved drug matches your mutation type, you get notified on-chain. E.g. "Drug X approved for BRCA2 carriers — your profile matches." Findings pushed to relevant patients, not buried in journals.</p>
+        </div>
+        <div class="outcome-card">
+          <div class="oc-icon">🪙</div>
+          <h4>Research Dividends</h4>
+          <p>Token rewards for genome upload + record contributions. Staking for governance. When pharma runs a study on data matching your profile, you receive a share of the study payment — not $0 like today's RWD market.</p>
+        </div>
+        <div class="outcome-card">
+          <div class="oc-icon">🔐</div>
+          <h4>Verifiable Consent Audit</h4>
+          <p>Every institution that accessed your data, every study you participated in, every permission you granted — on-chain audit trail. Revocable at any time. Crypto-shredding for GDPR right-to-forget compliance.</p>
+        </div>
+      </div>
+
+      <div class="proof-box">
+        <div class="proof-label">Novel Insight</div>
+        <p>World ID's <code>nullifier_hash</code> via Incognito Action is the exact primitive needed to enforce one-genome-per-person. This is the precise Sybil attack that killed Nebula Genomics, EncrypGen, and Hu-manity.co. No prior genomic marketplace solved it. This combination is novel.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONNECTOR 1 -->
+  <div class="connector">
+    <div class="connector-line" style="background: linear-gradient(var(--patient), var(--chain))"></div>
+    <div class="connector-label">encrypted upload · IPFS + Filecoin · CID on-chain</div>
+    <div class="connector-line" style="background: linear-gradient(var(--patient), var(--chain))"></div>
+    <div class="connector-arrow">▼</div>
+  </div>
+
+  <!-- ══ LAYER 2: PUBLIC CHAIN ══ -->
+  <div class="layer layer-chain" id="L2">
+    <div class="layer-header" onclick="toggle('L2')">
+      <div class="layer-icon">⛓️</div>
+      <div class="layer-meta">
+        <div class="layer-name">WorldChain — Public Layer</div>
+        <div class="layer-role">OP Stack L2 · Chain ID 480 · Full EVM · 2s blocks</div>
+      </div>
+      <div class="layer-toggle">▼</div>
+    </div>
+    <div class="layer-summary">
+      <span class="chip">Sybil-resistant registry</span>
+      <span class="chip">Smart contract consent</span>
+      <span class="chip">PBH gas subsidies</span>
+      <span class="chip">Token economy</span>
+    </div>
+    <div class="layer-detail">
+      <p class="detail-section-title">On-Chain Architecture</p>
+      <div class="detail-grid">
+        <div class="detail-card">
+          <h4 style="color:var(--chain)">GenomeRegistry Contract</h4>
+          <p>Incognito Action gate: each <code>nullifier_hash</code> maps to exactly one genome CID. Rejects duplicates. World ID circuit verifies Orb status before write. CID = IPFS hash of encrypted SNP file on Filecoin.</p>
+        </div>
+        <div class="detail-card">
+          <h4 style="color:var(--chain)">RecordVault Contract</h4>
+          <p>Patient pushes encrypted file to IPFS → gets CID → contract stores (CID, timestamp, record_type). Patient's private key never leaves their device. Contract manages a per-patient CID list.</p>
+        </div>
+        <div class="detail-card">
+          <h4 style="color:var(--chain)">ConsentManager Contract</h4>
+          <p>Patient signs a consent transaction specifying: institution address, data types, study types, expiry. Generates a time-limited access token. Revocable in one tx. Audit trail stored on-chain (21 CFR Part 11 compatible timestamping).</p>
+        </div>
+        <div class="detail-card">
+          <h4 style="color:var(--chain)">PBH — Priority Blockspace</h4>
+          <p>Orb-verified humans get sequencer priority + gas subsidies. Live since June 2025. Patient uploads never get frontrun. High-frequency medical record updates don't break the bank for unbanked users.</p>
+        </div>
+      </div>
+
+      <p class="detail-section-title">Token Economy</p>
+      <div class="token-row">
+        <div class="token-pill">🧬 Genome upload: 500 tokens</div>
+        <div class="token-pill">📄 Record upload: 10–50 tokens</div>
+        <div class="token-pill">🔬 Study consent: variable reward</div>
+        <div class="token-pill">🗳️ Governance staking</div>
+        <div class="token-pill">📊 Data quality bonus</div>
+      </div>
+
+      <p class="detail-section-title">Off-Chain Storage</p>
+      <div class="flow-note">
+        <div class="flow-note-icon">💾</div>
+        <p><strong>IPFS + Filecoin</strong> for large DICOM files (CT ~153MB, MRI ~99MB). <strong>Arweave</strong> for smaller permanent docs (bills, PDFs). On-chain: only the content hash. Data encrypted with patient's key. Crypto-shredding = GDPR erasure without breaking chain immutability.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONNECTOR 2 -->
+  <div class="connector">
+    <div class="connector-line" style="background: linear-gradient(var(--chain), var(--institutional))"></div>
+    <div class="connector-label">on-chain consent signed · access token generated · no raw data transmitted</div>
+    <div class="connector-line" style="background: linear-gradient(var(--chain), var(--institutional))"></div>
+    <div class="connector-arrow">▼</div>
+  </div>
+
+  <!-- ══ LAYER 3: INSTITUTIONAL PRIVATE NETWORK ══ -->
+  <div class="layer layer-inst" id="L3">
+    <div class="layer-header" onclick="toggle('L3')">
+      <div class="layer-icon">🏥</div>
+      <div class="layer-meta">
+        <div class="layer-name">Private Institutional Network</div>
+        <div class="layer-role">Pharma · Research Orgs · Hospitals · CROs</div>
+      </div>
+      <div class="layer-toggle">▼</div>
+    </div>
+    <div class="layer-summary">
+      <span class="chip">Permissioned blockchain</span>
+      <span class="chip">Federated learning</span>
+      <span class="chip">Raw data never leaves patient node</span>
+      <span class="chip">MELLODDY proven at scale</span>
+    </div>
+    <div class="layer-detail">
+      <p class="detail-section-title">How Existing Private Health Networks Operate</p>
+      <div class="detail-grid">
+        <div class="detail-card">
+          <h4 style="color:var(--institutional)">Hyperledger Fabric / Besu</h4>
+          <p>Permissioned blockchains used in production healthcare. PBFT consensus (Byzantine fault tolerant, deterministic finality). No mining. Institutions = validator nodes. Each has known identity. 2–4 second finality.</p>
+        </div>
+        <div class="detail-card">
+          <h4 style="color:var(--institutional)">Triall.io (Live System)</h4>
+          <p>Only confirmed production blockchain clinical trial system. ClinicalTrials.gov + blockchain audit trail. Hyperledger-based. Proves the architecture is regulatorily viable — not just theoretical.</p>
+        </div>
+        <div class="detail-card">
+          <h4 style="color:var(--institutional)">HealthVerity / IQVIA</h4>
+          <p>Current RWD brokers. Buy patient data from insurance companies, not from patients. Patients get $0. Pharma pays $250K–$5M per study. This is the market our ecosystem disrupts.</p>
+        </div>
+        <div class="detail-card">
+          <h4 style="color:var(--institutional)">MELLODDY (Proof)</h4>
+          <p>10 pharma companies (Bayer, Novartis, Pfizer, Sanofi...). 2.6B data points. FL + DP + Secure Aggregation deployed at industry scale. Best published evidence that this stack works in real pharma R&D.</p>
+        </div>
+      </div>
+
+      <p class="detail-section-title">Federated Learning Process</p>
+      <div class="fl-diagram">
+        <div class="fl-node">
+          <div class="fl-label">Institution</div>
+          <div class="fl-name">Sends Model</div>
+        </div>
+        <div class="fl-arrow">→</div>
+        <div class="fl-node">
+          <div class="fl-label">Patient Node</div>
+          <div class="fl-name">Local Compute</div>
+        </div>
+        <div class="fl-arrow">→</div>
+        <div class="fl-node">
+          <div class="fl-label">Only Gradients</div>
+          <div class="fl-name">+DP Noise</div>
+        </div>
+        <div class="fl-arrow">→</div>
+        <div class="fl-node">
+          <div class="fl-label">Secure Agg.</div>
+          <div class="fl-name">Aggregate</div>
+        </div>
+        <div class="fl-arrow">→</div>
+        <div class="fl-node">
+          <div class="fl-label">Institution</div>
+          <div class="fl-name">Updated Model</div>
+        </div>
+      </div>
+      <div class="flow-note" style="margin-top:12px">
+        <div class="flow-note-icon">🔒</div>
+        <p><strong>Raw patient data never leaves the patient's encrypted node.</strong> Model gradients are ε-differentially private (Gaussian noise). Secure Aggregation means no institution sees individual patient gradients. FLuID (Nature MI, 2025) adds federated distillation — transfers knowledge, not gradients, reducing leakage surface further.</p>
+      </div>
+
+      <p class="detail-section-title">Study Types Run on Platform</p>
+      <div class="detail-grid">
+        <div class="detail-card">
+          <h4>Pharmacogenomics Studies</h4>
+          <p>Which SNP variants predict drug response or toxicity. E.g. CYP2C19 for clopidogrel. Requires large cohorts with both genome + medication history.</p>
+        </div>
+        <div class="detail-card">
+          <h4>Population Genomics</h4>
+          <p>Disease risk variants by ancestry. Each new participant refines population-specific models. South Asian, African, Latin American genomes historically underrepresented in databases.</p>
+        </div>
+        <div class="detail-card">
+          <h4>RWE Clinical Studies</h4>
+          <p>Real-World Evidence supporting new drug indications (FDA RWE Framework 2018). Observational studies on patient-contributed longitudinal records. Superior to claims data — genome-anchored, patient-verified.</p>
+        </div>
+        <div class="detail-card">
+          <h4>Clinical Trial Monitoring</h4>
+          <p>Persistent monitoring of active trial participants. Blockchain audit trail per Zhuang 2018 (PMC6371378): smart contracts ensure data provenance from each clinical site, timestamps immutable.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONNECTOR 3 -->
+  <div class="connector">
+    <div class="connector-line" style="background: linear-gradient(var(--institutional), var(--regulatory))"></div>
+    <div class="connector-label">CDISC SDTM/ADaM formatting · IRB approval · WHO ICTRP registration</div>
+    <div class="connector-line" style="background: linear-gradient(var(--institutional), var(--regulatory))"></div>
+    <div class="connector-arrow">▼</div>
+  </div>
+
+  <!-- ══ LAYER 4: REGULATORY GATE ══ -->
+  <div class="layer layer-reg" id="L4">
+    <div class="layer-header" onclick="toggle('L4')">
+      <div class="layer-icon">🏛️</div>
+      <div class="layer-meta">
+        <div class="layer-name">Regulatory Gate</div>
+        <div class="layer-role">FDA · EMA · ICH · WHO ICTRP · IRB</div>
+      </div>
+      <div class="layer-toggle">▼</div>
+    </div>
+    <div class="layer-summary">
+      <span class="chip">21 CFR Part 11</span>
+      <span class="chip">CDISC mandatory for FDA</span>
+      <span class="chip">EU CTR 536/2014</span>
+      <span class="chip">Blockchain supplements, can't replace</span>
+    </div>
+    <div class="layer-detail">
+      <p class="detail-section-title">FDA Rules for Patient-Contributed RWD</p>
+      <div class="detail-grid">
+        <div class="detail-card">
+          <h4 style="color:var(--regulatory)">21 CFR Part 11</h4>
+          <p>Governs electronic records in FDA-regulated research. Requires audit trails, access controls, timestamps, e-signatures. Explicitly approves timestamping for consent versioning. <strong>Permissioned blockchain audit trail is architecturally compatible.</strong></p>
+        </div>
+        <div class="detail-card">
+          <h4 style="color:var(--regulatory)">FDA RWE Framework (2018)</h4>
+          <p>Mandated by 21st Century Cures Act. Accepts RWE for: (a) new drug indications, (b) post-approval study requirements. Our patient-contributed longitudinal records with genome anchoring are higher quality than claims data from insurers.</p>
+        </div>
+        <div class="detail-card">
+          <h4 style="color:var(--regulatory)">CDISC SDTM / ADaM</h4>
+          <p>Mandatory for all FDA NDA/BLA submissions (studies after Dec 2016). Patient data from our platform must be mapped to SDTM format before submission. The institutional layer handles this transformation. EMA: encouraged but not mandated.</p>
+        </div>
+        <div class="detail-card">
+          <h4 style="color:var(--regulatory)">IRB / Ethics Approval</h4>
+          <p>Smart contracts cannot replace Institutional Review Board approval. Human subjects research requires ethics committee review before patient recruitment begins. This is a legal requirement across all jurisdictions — plan for it.</p>
+        </div>
+      </div>
+
+      <p class="detail-section-title">EU/Global Requirements</p>
+      <div class="detail-grid">
+        <div class="detail-card">
+          <h4 style="color:var(--regulatory)">EU CTR 536/2014</h4>
+          <p>Trial must register in WHO ICTRP <em>before</em> trial starts. Data from unregistered trials "shall not be considered" in EMA assessment (Art. 25). Blockchain registration cannot substitute — WHO ICTRP is a named legal requirement.</p>
+        </div>
+        <div class="detail-card">
+          <h4 style="color:var(--regulatory)">DARWIN EU</h4>
+          <p>EMA's RWE platform. Common data model across EU data partners. First studies completed. Our platform could feed into DARWIN EU as a data partner — adding blockchain-provenance layer to their infrastructure.</p>
+        </div>
+        <div class="detail-card">
+          <h4 style="color:var(--regulatory)">ICH GCP E6(R2/R3)</h4>
+          <p>International baseline standard. Covers audit trails, system-to-system data transfer, risk-based data governance. Applies in US, EU, Canada, Japan, Australia simultaneously. Our blockchain audit trail maps directly to E6 requirements.</p>
+        </div>
+      </div>
+
+      <p class="detail-section-title">Where Blockchain Fits in the Regulatory Stack</p>
+      <div class="reg-table-wrap">
+        <table class="reg-table">
+          <thead>
+            <tr><th>Use Case</th><th>Feasibility</th><th>Blocker</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>On-chain consent audit log (21 CFR Part 11)</td><td class="yes">✓ Plausible</td><td>Must prove equivalence; Scrybe (arXiv:2109.05649) precedent</td></tr>
+            <tr><td>RWD provenance / source verification</td><td class="yes">✓ Strongest use</td><td>No explicit FDA guidance yet — maps to existing data integrity frameworks</td></tr>
+            <tr><td>Post-approval results hash on-chain</td><td class="yes">✓ Sound, supplements</td><td>Cannot satisfy ClinicalTrials.gov legal obligation alone</td></tr>
+            <tr><td>Replace ClinicalTrials.gov registration</td><td class="no">✗ Not feasible</td><td>Law names specific registries. Blockchain cannot substitute</td></tr>
+            <tr><td>Replace IRB consent process</td><td class="no">✗ Not feasible</td><td>Requires regulatory reform — out of scope</td></tr>
+            <tr><td>CDISC SDTM/ADaM data format</td><td class="partial">~ Indirect</td><td>Our platform must map patient data to SDTM before regulatory submission</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="proof-box" style="border-color:var(--reg-border); background:var(--reg-bg)">
+        <div class="proof-label" style="color:var(--regulatory)">Publication Requirements</div>
+        <p>US: summary results on ClinicalTrials.gov within <strong>1 year</strong> of primary completion. EU: results within <strong>1 year</strong>, CSRs within <strong>30 days</strong> of marketing authorisation. After these are posted, we publish an immutable hash on WorldChain — tamper-evident supplement, not replacement.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONNECTOR 4 -->
+  <div class="connector">
+    <div class="connector-line" style="background: linear-gradient(var(--regulatory), var(--publication))"></div>
+    <div class="connector-label">results posted ClinicalTrials.gov + EU CTR → then hash published on WorldChain</div>
+    <div class="connector-line" style="background: linear-gradient(var(--regulatory), var(--publication))"></div>
+    <div class="connector-arrow">▼</div>
+  </div>
+
+  <!-- ══ LAYER 5: ON-CHAIN PUBLICATION ══ -->
+  <div class="layer layer-pub" id="L5">
+    <div class="layer-header" onclick="toggle('L5')">
+      <div class="layer-icon">📡</div>
+      <div class="layer-meta">
+        <div class="layer-name">On-Chain Publication</div>
+        <div class="layer-role">Findings routed back to patient profiles · Every ancestry mapped</div>
+      </div>
+      <div class="layer-toggle">▼</div>
+    </div>
+    <div class="layer-summary">
+      <span class="chip">Tamper-evident results</span>
+      <span class="chip">Profile-matched alerts</span>
+      <span class="chip">Ancestry models grow</span>
+      <span class="chip">Generational tracking</span>
+    </div>
+    <div class="layer-detail">
+      <p class="detail-section-title">What Gets Published On-Chain</p>
+      <div class="detail-grid">
+        <div class="detail-card">
+          <h4 style="color:var(--publication)">Results Hash</h4>
+          <p>Keccak-256 hash of the official ClinicalTrials.gov/EU CTR posting published as an on-chain event. Timestamp + study ID + registry URL. Anyone can verify: this exact result, unmodified, was posted at this time.</p>
+        </div>
+        <div class="detail-card">
+          <h4 style="color:var(--publication)">Study Metadata</h4>
+          <p>Study type, population (genome-matched criteria), data sources used, institution identifier, approval authority (FDA/EMA/both). Stored as structured data, queryable by patient profiles.</p>
+        </div>
+        <div class="detail-card">
+          <h4 style="color:var(--publication)">Finding Tags</h4>
+          <p>Machine-readable: gene variants studied, drug names, disease codes (ICD-10), ancestry groups affected. Smart contract routes findings to matching patient profiles automatically.</p>
+        </div>
+      </div>
+
+      <p class="detail-section-title">Findings Flow Back to Patients</p>
+      <div class="detail-grid">
+        <div class="detail-card">
+          <h4>Genomic Match Alerts</h4>
+          <p>"Drug X approved for BRCA2 carriers. Your genome has this variant. Study: NCT###, FDA approved [date]. Discuss with your physician." Patient-specific, not generic news.</p>
+        </div>
+        <div class="detail-card">
+          <h4>Risk Score Updates</h4>
+          <p>New population genomics study → patient's polygenic risk scores recalculated. If a large South Asian cohort study discovers a new T2D risk variant, every South Asian patient on the platform gets updated scores.</p>
+        </div>
+        <div class="detail-card">
+          <h4>Pharmacogenomics Updates</h4>
+          <p>New drug interaction data → patient's medication profile updated. "New study: CYP2C9 poor metabolizers have 3x higher bleed risk on warfarin. Your profile: CYP2C9 *2/*2. Alert your cardiologist."</p>
+        </div>
+        <div class="detail-card">
+          <h4>Study Reward Distribution</h4>
+          <p>Smart contract distributes study payment tokens to participating patients. Pro-rated by data contribution quality, record completeness, genome match to study population. Transparent, automated, auditable.</p>
+        </div>
+      </div>
+
+      <p class="detail-section-title">"Every Ancestry Gets Mapped" — How It Works</p>
+      <div class="ancestry-vis">
+        <div class="anc-title">Population Coverage Grows With Each New Participant</div>
+        <div class="anc-grid">
+          <div class="anc-pop">
+            <span class="pop-name">South Asian</span>
+            <span>1.4B potential</span>
+            <div class="pop-bar" style="width:85%"></div>
+          </div>
+          <div class="anc-pop">
+            <span class="pop-name">East Asian</span>
+            <span>underrepresented in GWAS</span>
+            <div class="pop-bar" style="width:60%"></div>
+          </div>
+          <div class="anc-pop">
+            <span class="pop-name">African</span>
+            <span>highest genetic diversity</span>
+            <div class="pop-bar" style="width:40%"></div>
+          </div>
+          <div class="anc-pop">
+            <span class="pop-name">Latin American</span>
+            <span>admixed populations</span>
+            <div class="pop-bar" style="width:35%"></div>
+          </div>
+          <div class="anc-pop">
+            <span class="pop-name">Middle Eastern</span>
+            <span>historically excluded</span>
+            <div class="pop-bar" style="width:25%"></div>
+          </div>
+          <div class="anc-pop">
+            <span class="pop-name">Indigenous</span>
+            <span>unique variants</span>
+            <div class="pop-bar" style="width:15%"></div>
+          </div>
+          <div class="anc-pop">
+            <span class="pop-name">European</span>
+            <span>80% of current GWAS</span>
+            <div class="pop-bar" style="width:95%"></div>
+          </div>
+          <div class="anc-pop">
+            <span class="pop-name">Admixed</span>
+            <span>complex ancestry</span>
+            <div class="pop-bar" style="width:20%"></div>
+          </div>
+        </div>
+        <p style="font-size:.72rem; color:var(--fg-muted); margin-top:10px">Today's genomic databases are ~80% European. World ID's global presence (160+ countries, 18M verified) makes this platform the first with infrastructure to build truly diverse genomic cohorts. South Asian, African, and Latin American participants add population-specific reference panels that simply don't exist today. Every new person makes the platform more accurate for everyone who shares their ancestry.</p>
+      </div>
+
+      <p class="detail-section-title">Generational Health Lineage</p>
+      <div class="flow-note">
+        <div class="flow-note-icon">🧬</div>
+        <p><strong>Longitudinal + multigenerational:</strong> When parent and child are both on the platform, shared genomic haplotypes can be identified (with consent). Hereditary disease patterns surface across generations. A family's health story becomes a longitudinal dataset — not just individual snapshots. As decades pass, this platform becomes the largest consented, patient-sovereign longitudinal health cohort in history.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- RETURN CONNECTOR -->
+  <div class="return-connector">
+    <div class="return-line"></div>
+    <div class="return-label">findings return to patient profiles</div>
+  </div>
+
+</div><!-- /flow -->
+
+<!-- LEGEND -->
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:var(--patient)"></div>Patient / Public Chain</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--chain)"></div>WorldChain L2</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--institutional)"></div>Private Institutional</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--regulatory)"></div>Regulatory Gate</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--publication)"></div>Publication + Return</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--token)"></div>Token Flow</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--outcome)"></div>Patient Outcomes</div>
+</div>
+
+<script>
+function toggle(id) {
+  const el = document.getElementById(id);
+  el.classList.toggle('open');
+}
+// Open first layer by default
+document.getElementById('L1').classList.add('open');
+</script>
