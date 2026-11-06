@@ -1,9 +1,8 @@
 "use client";
 
-import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { useAccount } from "wagmi";
+import { MiniKit } from "@worldcoin/minikit-js";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useState } from "react";
 
 const STATS = [
   { value: "13M+", label: "Verified Humans" },
@@ -12,19 +11,45 @@ const STATS = [
 ];
 
 const STEPS = [
-  { step: "01", title: "Connect", desc: "Link your wallet via RainbowKit" },
+  { step: "01", title: "Connect", desc: "Sign in via World App" },
   { step: "02", title: "Verify", desc: "Prove humanity with World ID" },
   { step: "03", title: "Upload", desc: "Submit your VCF file to IPFS" },
   { step: "04", title: "Earn", desc: "500 GNM + perpetual data royalties" },
 ];
 
 export default function Home() {
-  const { isConnected } = useAccount();
   const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (isConnected) router.push("/verify");
-  }, [isConnected, router]);
+  async function handleSignIn() {
+    setLoading(true);
+    setError(null);
+    try {
+      if (!MiniKit.isInstalled()) {
+        setError("Open this app inside World App to sign in.");
+        setLoading(false);
+        return;
+      }
+      const nonce = crypto.randomUUID().replace(/-/g, "");
+      const { finalPayload } = await MiniKit.commandsAsync.walletAuth({
+        nonce,
+        expirationTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        statement: "Sign in to GenomeChain — patient-sovereign data marketplace",
+      });
+      if (finalPayload.status === "error") {
+        setError("Sign in failed. Try again.");
+        return;
+      }
+      sessionStorage.setItem("minikit_address", finalPayload.address);
+      sessionStorage.setItem("minikit_signed_in", "true");
+      router.push("/verify");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Sign in failed");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <main className="min-h-screen bg-genome-navy relative overflow-hidden">
@@ -78,7 +103,19 @@ export default function Home() {
           ))}
         </div>
 
-        <ConnectButton label="Enter GenomeChain" />
+        <button
+          onClick={handleSignIn}
+          disabled={loading}
+          className="px-8 py-4 rounded-xl bg-genome-teal text-black font-bold text-lg
+                     hover:opacity-90 active:scale-95 transition-all disabled:opacity-50
+                     shadow-[0_0_30px_rgba(0,201,167,0.3)]"
+        >
+          {loading ? "Opening World App…" : "Get Started with World App"}
+        </button>
+
+        {error && (
+          <p className="mt-4 text-sm text-red-400">{error}</p>
+        )}
 
         <p className="mt-5 text-xs text-gray-600">
           World ID required for genome submission &middot; Your wallet is never shared with researchers
