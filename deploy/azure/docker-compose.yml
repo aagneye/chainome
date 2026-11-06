@@ -56,6 +56,10 @@ services:
       BEE_BLOCKCHAIN_RPC_ENDPOINT: "${BEE_RPC:-https://ethereum-sepolia-rpc.publicnode.com}"
       BEE_SWAP_ENABLE: "true"
       BEE_FULL_NODE: "false"
+      # Bee 2.8.1 deploys its chequebook with a fixed 175k gas limit, but the Sepolia factory needs ~630k,
+      # so the deployment always reverts (out of gas). Run without a chequebook: uploads use Swarm's free
+      # bandwidth allowance, and buying postage batches only needs sBZZ in the node's wallet.
+      BEE_CHEQUEBOOK_ENABLE: "${BEE_CHEQUEBOOK_ENABLE:-false}"
       BEE_PASSWORD_FILE: /bee/password
     volumes:
       - ${GC_HOME}/bee:/home/bee/.bee
