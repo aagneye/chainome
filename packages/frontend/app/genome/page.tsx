@@ -9,6 +9,7 @@ import type { GenomeView } from "@/lib/arkiv-server";
 import { usePatientKey } from "@/lib/use-patient-key";
 import { useMiniKitTx } from "@/hooks/useMiniKitTx";
 import { GenomePanel } from "@/components/GenomePanel";
+import { GenomeUpload } from "@/components/GenomeUpload";
 
 /**
  * Genome flow (whole-genome VCF up to 2 GB never passes through the browser):
@@ -135,7 +136,7 @@ export default function GenomePage() {
         <section className="w-full max-w-3xl bg-genome-card border border-genome-border rounded-2xl p-6 space-y-4">
           <div className="flex items-center gap-3">
             <Step n={1} done={!!patientKey.publicKey} />
-            <h3 className="text-white font-semibold">Give your lab your encryption key</h3>
+            <h3 className="text-white font-semibold">{patientKey.publicKey ? "Upload your genome" : "Create your encryption key"}</h3>
           </div>
           {!patientKey.publicKey ? (
             <button
@@ -147,10 +148,16 @@ export default function GenomePage() {
             </button>
           ) : (
             <div className="space-y-3">
-              <KeyRow label="Public key" value={patientKey.publicKey} copied={copied === "pk"} onCopy={() => copy("pk", patientKey.publicKey!)} />
-              <KeyRow label="Lab command" value={labCommand} copied={copied === "cmd"} onCopy={() => copy("cmd", labCommand)} />
+              <GenomeUpload patient={address} patientPublicKey={patientKey.publicKey} onDone={load} />
+              <details className="text-xs text-gray-500">
+                <summary className="cursor-pointer hover:text-gray-300">Your lab already has the file? Give them your key instead</summary>
+                <div className="mt-3 space-y-3">
+                  <KeyRow label="Public key" value={patientKey.publicKey} copied={copied === "pk"} onCopy={() => copy("pk", patientKey.publicKey!)} />
+                  <KeyRow label="Lab command" value={labCommand} copied={copied === "cmd"} onCopy={() => copy("cmd", labCommand)} />
+                </div>
+              </details>
               <p className="text-xs text-gray-500">
-                Only the public half leaves this page. The private key is recomputed from your signature whenever you need it and is never stored.
+                Only the public half of your key leaves this page. The private key is recomputed from your signature whenever you need it and is never stored.
               </p>
             </div>
           )}
