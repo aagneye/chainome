@@ -24,7 +24,7 @@ ETHGlobal Mumbai 2026
 
 A two-layer patient-sovereign data platform:
 
-**Layer 1 — Public consumer app:** Patients upload medical bills, scans, prescriptions, lab reports, and genomic files. Earn GNM tokens. All data encrypted before leaving the device. Encrypted files stored on Lighthouse (IPFS+Filecoin). Only the IPFS CID lands on WorldChain. All transactions broadcast via WorldChain Anon RPC to strip IP metadata.
+**Layer 1 — Public consumer app:** Patients upload medical bills, scans, prescriptions, lab reports, and genomic files. Earn GNM tokens. All data encrypted before leaving the device. Encrypted files stored on Lighthouse (IPFS+Filecoin). Only the IPFS CID lands on WorldChain. All chain reads go through EF Anon-RPC (Nox mixnet) so the RPC provider never sees the patient's IP.
 
 **Layer 2 — Private research marketplace:** Pharma/research institutions publish studies on-chain via StudyRegistry. Patients browse, verify identity with World ID, and consent to share specific data types. Institutions query consented metadata from Arkiv and receive only the data types each patient consented to.
 
@@ -67,7 +67,7 @@ Patient device
 
 **GDPR right to erasure:** To delete a genome: burn the AES key. The encrypted blob on IPFS becomes permanently irrecoverable — no personal data was ever stored on-chain (only the CID of an indecipherable blob). Chain immutability is preserved. Personal data is erased. This satisfies GDPR Art. 17 without chain forks.
 
-**Privacy layer:** All patient transactions broadcast via WorldChain Anon RPC — strips IP address from transaction broadcast so there is no IP→wallet→medical data linkage.
+**Privacy layer:** All chain reads go through EF Anon-RPC over the Nox mixnet, so there is no IP→wallet→medical data linkage at the RPC provider. Transactions are sent by World App (MiniKit).
 
 ### Layer 2: Research Study Marketplace
 
@@ -120,7 +120,7 @@ Institution
        │  GenomeRegistry   RecordVault   ConsentManager│
        │  ProtocolRegistry StudyRegistry LabRegistry   │
        │  LabAttestation   HealthToken                 │
-       │  All txs via Anon RPC (no IP linkage)         │
+       │  All reads via EF Anon-RPC (no IP linkage)    │
        └───────────┬──────────────────┬────────────────┘
                    │ metadata entities│ consent grants
        ┌───────────▼──────┐  ┌────────▼────────────────┐
@@ -205,7 +205,7 @@ All contracts deployed on WorldChain (mainnet: chain ID 480, testnet: Sepolia ch
 
 | Threat | Mitigation |
 |--------|-----------|
-| IP→wallet→medical data linkage | WorldChain Anon RPC strips IP from tx broadcast |
+| IP→wallet→medical data linkage | EF Anon-RPC: reads travel over the Nox mixnet; provider sees the exit, not the patient |
 | Raw genomic data exposure | AES-256 encryption before upload; key never leaves device |
 | Cross-institution patient re-identification | Partial nullifier (first 16 chars) in Arkiv — not full nullifier_hash |
 | GDPR erasure on immutable chain | Crypto-shredding: burn AES key → encrypted blob irrecoverable |
@@ -221,7 +221,7 @@ All contracts deployed on WorldChain (mainnet: chain ID 480, testnet: Sepolia ch
 | **World** (Best use of World ID) | Core primitive: `nullifier_hash` enforces one-genome-per-human at EVM level. 160+ country coverage addresses GWAS diversity gap. PBH for gas subsidies on patient uploads. |
 | **Arkiv** (Best use of Arkiv DB) | Medical record metadata stored as owned entities. Patient wallet = owner. Consent checked on-chain. Expiry enforces GDPR. Cross-institution queryable without centralized broker. |
 | **EF** (Ethereum Foundation) | WorldChain is OP Stack L2. All contracts EVM-standard. Demonstrates Ethereum's privacy-preserving infrastructure for real-world healthcare use cases. |
-| **Anon RPC** | All patient transactions are broadcast via WorldChain Anon RPC, so no IP address is linked to a wallet holding medical records. |
+| **EF Anon-RPC** | All chain reads go through EF Anon-RPC (Nox mixnet) by default with no direct fallback, so no IP address is linked to a wallet holding medical records. |
 
 ---
 

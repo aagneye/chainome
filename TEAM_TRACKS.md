@@ -131,30 +131,16 @@ All tests passing. Deploy script ready. Waiting on PRIVATE_KEY.
 
 ---
 
-## Track D — Anonymous RPC Prize Submission
-**Owner:** Teammate 3 (Anon RPC ETH track)
+## Track D — EF Anon-RPC
+**Owner:** Atul
 
-The code is already built. This track is documentation + prize submission only.
+Built in `feat/anon-rpc`. All chain reads go through EF Anon-RPC (`@anon-rpc/browser-harness`) over the Nox mixnet by default, with no direct-RPC fallback. Nym is a backup network in the badge.
 
-### What's already done
-- `packages/frontend/lib/wagmi.ts` — Anon RPC configured as primary transport
-  - Primary: `https://anon-rpc.worldchain-sepolia.g.alchemy.com/public`
-  - Fallback: public WorldChain RPC
-  - All `useReadContract` calls go through Anon RPC by default
-- `docs/anon-rpc-integration.md` — full integration doc with threat model
+- `packages/frontend/lib/anonRpc.ts` — worker, batching, per-wallet isolation, counters
+- `packages/frontend/lib/wagmi.ts` — WorldChain transports are `anonTransport(url)`
+- `packages/frontend/components/AnonRpcStatus.tsx` — status badge with live check
+- `docs/anon-rpc-integration.md` — submission doc: design, measurements, disclosed exclusions, threat model
 
-### What you need to do
-1. Find the exact prize sponsor on ETHGlobal: `https://ethglobal.com/events/mumbai/prizes`
-   - Search for "Anon RPC", "Anonymous RPC", or "Privacy RPC"
-2. Read `docs/anon-rpc-integration.md` — this is your submission doc
-3. If the prize requires a demo: show that `lib/wagmi.ts` uses the Anon RPC endpoint
-4. Submit on the ETHGlobal prize portal linking the repo and pointing judges to `docs/anon-rpc-integration.md`
+Prize: Ethereum Foundation "Best Use of Anon-RPC" (one EF prize per project). Requirement: reads through Anon-RPC by default.
 
-### The core argument for judges
-Medical data is GDPR Article 9 (special category). Without Anon RPC:
-`patient home IP → RPC provider logs → wallet address → genome CID → full medical profile linkable`
-
-With Anon RPC: IP stripped at transport layer before hitting the node. Privacy-preserving by default for all patient transactions.
-
-### Key file
-`packages/frontend/lib/wagmi.ts` lines 4–44
+Still to do: test inside the World App webview; record the demo.

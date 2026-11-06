@@ -11,7 +11,7 @@ ETHGlobal Mumbai 2026 — Nov 5–8.
 GenomeChain lets patients upload their medical records and genomic data, earn GNM tokens, and consent to share de-identified metadata with research institutions. All files are AES-256 encrypted before leaving the device. Encrypted blobs go to Lighthouse (IPFS+Filecoin). Only the 46-byte CID lands on WorldChain. World ID enforces one genome per unique human at the EVM level — the Sybil-resistance primitive that every prior genomic marketplace lacked.
 
 **Two layers:**
-- **Consumer app:** Upload bills, scans, prescriptions, lab reports, genomes → earn GNM. All transactions via Anon RPC (no IP→wallet linkage). Metadata indexed in Arkiv (patient-owned entities, consent-gated, GDPR-native expiry).
+- **Consumer app:** Upload bills, scans, prescriptions, lab reports, genomes → earn GNM. All chain reads via EF Anon-RPC over the Nox mixnet (no IP→wallet linkage). Metadata indexed in Arkiv (patient-owned entities, consent-gated, GDPR-native expiry).
 - **Research marketplace:** Pharma publishes studies on-chain (StudyRegistry). Patients browse and consent. Institutions query Arkiv for matched cohorts and see only the data types each patient consented to.
 
 ---
@@ -23,7 +23,7 @@ GenomeChain lets patients upload their medical records and genomic data, earn GN
 | **World — IDKit + Mini App** | World ID Orb gating genome submission (`nullifier_hash` = one-genome-per-human). MiniKit walletAuth + verify replace RainbowKit/IDKit — runs natively inside World App. Agent Pass gates AI health insights. |
 | **Arkiv** | Medical record metadata stored as patient-owned Arkiv entities. Consent-gated by on-chain ConsentManager. 10-year GDPR expiry. Cross-institution queryable without centralized broker. 5/5 prize files in `docs/arkiv/`. |
 | **Ethereum Foundation** | `ProtocolRegistry.sol` pre-registers clinical trial protocols on-chain before CT.gov. Detects outcome switching cryptographically. All contracts EVM-standard on WorldChain (OP Stack L2). |
-| **Anon RPC** | Every patient transaction broadcast through WorldChain Anon RPC (`wagmi.ts`). IP stripped before hitting node — breaks IP→wallet→medical record linkage. GDPR Art. 9 at transport layer. |
+| **EF Anon-RPC** | Every chain read the app makes goes through EF Anon-RPC (`@anon-rpc/browser-harness`, Nox mixnet) by default, with no direct-RPC fallback. The RPC provider never sees the patient's IP. See `docs/anon-rpc-integration.md`. |
 
 ---
 
@@ -89,7 +89,7 @@ Network: WorldChain Sepolia (chain ID 4801) for testnet, WorldChain mainnet (cha
 | World ID | `@worldcoin/idkit` (frontend), `IWorldID` interface (Solidity) |
 | File storage | Lighthouse SDK (IPFS + Filecoin), AES-256 client-side encryption |
 | Metadata DB | Arkiv — `medical_record_v1` entities, patient-owned |
-| Privacy RPC | WorldChain Anon RPC |
+| Privacy RPC | EF Anon-RPC (`@anon-rpc/browser-harness`, Nox mixnet; Nym backup) |
 | Frontend | Next.js, Wagmi, Viem |
 | Token | ERC-20 GNM with MINTER_ROLE |
 
