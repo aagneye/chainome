@@ -42,7 +42,11 @@ export default function Home() {
       localStorage.setItem("minikit_signed_in", "true");
       router.push("/verify");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Sign in failed");
+      const msg = e instanceof Error
+        ? `${e.constructor.name}: ${e.message}`
+        : String(e);
+      console.error("[chainome] walletAuth failed:", msg);
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -111,7 +115,18 @@ export default function Home() {
         </button>
 
         {error && (
-          <p className="mt-4 text-sm text-red-400">{error}</p>
+          <div className="fixed inset-0 z-50 flex items-end justify-center p-4 pointer-events-none">
+            <div className="pointer-events-auto w-full max-w-sm rounded-xl bg-red-950 border border-red-500 p-4 shadow-2xl">
+              <p className="text-xs font-bold text-red-400 mb-1">Sign-in error — tap to dismiss</p>
+              <p className="text-sm text-red-200 break-all">{error}</p>
+              <button
+                onClick={() => setError(null)}
+                className="mt-3 w-full py-1.5 rounded-lg bg-red-900 text-red-200 text-xs font-medium"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
         )}
 
         <p className="mt-5 text-xs text-gray-600">
