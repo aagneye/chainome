@@ -10,6 +10,6 @@ VM_WORKDIR="${VM_WORKDIR:-/data/biohub/genomechain}"
 
 cd "$ROOT"
 tar --exclude=node_modules --exclude=work --exclude=out -czf - \
-  package.json pnpm-workspace.yaml pnpm-lock.yaml .dockerignore packages/shared packages/pipeline \
+  package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc .dockerignore packages/shared packages/pipeline deploy/azure \
   | ssh "$VM_USER@$VM_HOST" "mkdir -p $VM_WORKDIR/src && cd $VM_WORKDIR/src && tar -xzf - && chmod +x packages/pipeline/scripts/*.sh \
       && docker build -q -f packages/pipeline/docker/Dockerfile -t genomechain-pipeline . >/dev/null && echo 'synced + image rebuilt'"
