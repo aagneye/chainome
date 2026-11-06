@@ -8,7 +8,7 @@ import { useState } from "react";
 const APP_ID  = process.env.NEXT_PUBLIC_WLD_APP_ID  as `app_${string}`;
 const ACTION  = process.env.NEXT_PUBLIC_WLD_ACTION  ?? "genome_submission";
 
-type Status = "idle" | "verifying" | "success";
+type Status = "idle" | "verifying" | "success" | "denied";
 
 export default function VerifyPage() {
   const { address } = useAccount();
@@ -20,6 +20,16 @@ export default function VerifyPage() {
     setStatus("success");
     sessionStorage.setItem("wld_proof", JSON.stringify(result));
     setTimeout(() => router.push("/genome"), 1200);
+  }
+
+  function onError(err?: { code?: string; message?: string }) {
+    setStatus("denied");
+    const msg = err?.code === "user_rejected"
+      ? "Verification cancelled. You must complete World ID verification to continue."
+      : err?.message
+        ? `Verification failed: ${err.message}`
+        : "Verification failed or was denied. Only verified humans can submit genomic data.";
+    setError(msg);
   }
 
   if (!address) {
@@ -38,6 +48,33 @@ export default function VerifyPage() {
           </div>
           <h2 className="text-2xl font-bold text-genome-teal mb-1">Verified</h2>
           <p className="text-gray-400 text-sm">Redirecting to genome upload…</p>
+        </div>
+      </main>
+    );
+  }
+
+  // Denied / cancelled path — blocked state
+  if (status === "denied") {
+    return (
+      <main className="min-h-screen flex flex-col items-center justify-center gap-6 px-4">
+        <div className="animate-slide-up text-center max-w-sm">
+          <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-red-900/30 border border-red-800 flex items-center justify-center">
+            <svg className="w-8 h-8 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold text-red-400 mb-2">Access Denied</h2>
+          <p className="text-gray-400 text-sm leading-relaxed mb-2">{error}</p>
+          <div className="p-3 rounded-lg bg-red-900/20 border border-red-800/50 text-xs text-red-300 text-left mb-6">
+            <p className="font-semibold mb-1">Why is verification required?</p>
+            <p>GenomeChain enforces one genome per unique human via World ID. Unverified wallets cannot submit genomic data, preventing Sybil attacks that would pollute the research dataset.</p>
+          </div>
+          <button
+            onClick={() => { setStatus("idle"); setError(null); }}
+            className="px-5 py-2 rounded-lg border border-genome-border text-gray-300 text-sm hover:border-genome-teal hover:text-genome-teal transition"
+          >
+            Try Again
+          </button>
         </div>
       </main>
     );
@@ -63,36 +100,41 @@ export default function VerifyPage() {
         action={ACTION}
         signal={address}
         onSuccess={onSuccess}
+        onError={onError}
         verification_level={VerificationLevel.Orb}
       >
         {({ open }) => (
-          <button
-            onClick={() => { setError(null); setStatus("verifying"); open(); }}
-            disabled={status === "verifying"}
-            className="relative px-6 py-3 rounded-lg bg-genome-teal text-black font-semibold
-                       hover:opacity-90 active:scale-95 transition-all disabled:opacity-60
-                       shadow-[0_0_20px_rgba(0,201,167,0.25)]"
-          >
-            {status === "verifying" ? (
-              <span className="flex items-center gap-2">
-                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                </svg>
-                Opening World ID…
-              </span>
-            ) : (
-              "Verify with World ID"
+          <div className="flex flex-col items-center gap-3">
+            <button
+              onClick={() => { setError(null); setStatus("verifying"); open(); }}
+              disabled={status === "verifying"}
+              className="relative px-6 py-3 rounded-lg bg-genome-teal text-black font-semibold
+                         hover:opacity-90 active:scale-95 transition-all disabled:opacity-60
+                         shadow-[0_0_20px_rgba(0,201,167,0.25)]"
+            >
+              {status === "verifying" ? (
+                <span className="flex items-center gap-2">
+                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                  </svg>
+                  Opening World ID…
+                </span>
+              ) : (
+                "Verify with World ID"
+              )}
+            </button>
+            {status === "verifying" && (
+              <button
+                onClick={() => { setStatus("denied"); setError("Verification cancelled. You must complete World ID verification to continue."); }}
+                className="text-xs text-gray-600 hover:text-gray-400 transition"
+              >
+                Cancel
+              </button>
             )}
-          </button>
+          </div>
         )}
       </IDKitWidget>
-
-      {error && (
-        <div className="animate-fade-in px-4 py-3 rounded-lg bg-red-900/30 border border-red-800 text-red-400 text-sm max-w-sm text-center">
-          {error}
-        </div>
-      )}
 
       <p className="text-xs text-gray-600">
         No Orb nearby? Use the{" "}
