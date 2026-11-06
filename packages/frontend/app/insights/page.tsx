@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAccount, useReadContract } from "wagmi";
+import { useReadContract } from "wagmi";
+import { useMiniKitAddress } from "@/hooks/useMiniKitAddress";
 import { useRouter } from "next/navigation";
 import { IDKitWidget, VerificationLevel, type ISuccessResult } from "@worldcoin/idkit";
 import { CONTRACTS, GENOME_REGISTRY_ABI, RECORD_VAULT_ABI } from "@/lib/contracts";
@@ -50,7 +51,7 @@ function Skeleton({ className }: { className?: string }) {
 }
 
 export default function InsightsPage() {
-  const { address } = useAccount();
+  const address = useMiniKitAddress();
   const router = useRouter();
   const [insights, setInsights] = useState<HealthInsights | null>(null);
   const [loading, setLoading] = useState(false);
