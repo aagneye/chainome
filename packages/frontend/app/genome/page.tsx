@@ -4,7 +4,8 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { MiniKit } from "@worldcoin/minikit-js";
 import { CONTRACTS, GENOME_REGISTRY_ABI } from "@/lib/contracts";
-import type { ISuccessResult } from "@worldcoin/idkit";
+// MiniKit verify payload stored by /verify page
+type ISuccessResult = { nullifier_hash: string; merkle_root: string; proof: string; verification_level: string; [k: string]: unknown };
 import { useMiniKitAddress } from "@/hooks/useMiniKitAddress";
 
 function detectFileType(name: string): string {

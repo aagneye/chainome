@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { useAccount, useReadContract } from "wagmi";
+import { useReadContract } from "wagmi";
+import { useMiniKitAddress } from "@/hooks/useMiniKitAddress";
 import { MiniKit } from "@worldcoin/minikit-js";
 import { CONTRACTS, CONSENT_MANAGER_ABI } from "@/lib/contracts";
 
 export default function ConsentPage() {
-  const { address } = useAccount();
+  const address = useMiniKitAddress();
   const [institution, setInstitution] = useState("");
   const [expireDays, setExpireDays] = useState(365);
   const [checkAddr, setCheckAddr] = useState("");

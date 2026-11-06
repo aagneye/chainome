@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useAccount } from "wagmi";
+import { useMiniKitAddress } from "@/hooks/useMiniKitAddress";
 import { MiniKit } from "@worldcoin/minikit-js";
 import { CONTRACTS, STUDY_REGISTRY_ABI } from "@/lib/contracts";
 
@@ -59,7 +59,7 @@ const PHASE_COLORS: Record<string, string> = {
 };
 
 export default function StudiesPage() {
-  const { address } = useAccount();
+  const address = useMiniKitAddress();
   const [filter, setFilter] = useState<Filter>("All");
   const [joiningId, setJoiningId] = useState<number | null>(null);
   const [selectedTypes, setSelectedTypes] = useState<Record<number, string[]>>({});

@@ -1,14 +1,14 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { useAccount } from "wagmi";
+import { useMiniKitAddress } from "@/hooks/useMiniKitAddress";
 import { MiniKit } from "@worldcoin/minikit-js";
 import { CONTRACTS, RECORD_VAULT_ABI } from "@/lib/contracts";
 
 const RECORD_TYPES = ["Lab Report", "Prescription", "Imaging", "Vaccination", "Clinical Notes", "Other"];
 
 export default function RecordsPage() {
-  const { address } = useAccount();
+  const address = useMiniKitAddress();
   const [file, setFile] = useState<File | null>(null);
   const [recordType, setRecordType] = useState(RECORD_TYPES[0]);
   const [uploading, setUploading] = useState(false);
