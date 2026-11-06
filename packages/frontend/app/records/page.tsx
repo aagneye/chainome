@@ -51,6 +51,19 @@ export default function RecordsPage() {
       const ipfsCid = data.Hash as string;
       setCid(ipfsCid);
 
+      // Background: write metadata to Arkiv (Web3 DB-chain) — fire and forget
+      fetch("/api/arkiv-record", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ownerAddress:  address,
+          nullifierHash: JSON.parse(sessionStorage.getItem("wld_proof") ?? "{}").nullifier_hash ?? "0",
+          recordType:    recordType.toLowerCase().replace(" ", "_"),
+          cid:           ipfsCid,
+          date:          new Date().toISOString().split("T")[0],
+        }),
+      }).catch((e) => console.warn("[arkiv-record] background write failed", e));
+
       writeContract({
         address: CONTRACTS.recordVault.address as `0x${string}`,
         abi: CONTRACTS.recordVault.abi,

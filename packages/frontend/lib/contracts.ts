@@ -89,9 +89,23 @@ export const HEALTH_TOKEN_ABI = [
   },
 ] as const;
 
+export const STUDY_REGISTRY_ABI = [
+  {
+    name: "joinStudy",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "studyId",         type: "uint256"   },
+      { name: "sharedDataTypes", type: "string[]"  },
+    ],
+    outputs: [],
+  },
+] as const;
+
 export const CONTRACTS = {
-  genomeRegistry: process.env.NEXT_PUBLIC_GENOME_REGISTRY as `0x${string}`,
-  recordVault:    process.env.NEXT_PUBLIC_RECORD_VAULT    as `0x${string}`,
-  consentManager: process.env.NEXT_PUBLIC_CONSENT_MANAGER as `0x${string}`,
-  healthToken:    process.env.NEXT_PUBLIC_HEALTH_TOKEN    as `0x${string}`,
+  genomeRegistry: process.env.NEXT_PUBLIC_GENOME_REGISTRY  as `0x${string}`,
+  recordVault:    process.env.NEXT_PUBLIC_RECORD_VAULT     as `0x${string}`,
+  consentManager: process.env.NEXT_PUBLIC_CONSENT_MANAGER  as `0x${string}`,
+  healthToken:    process.env.NEXT_PUBLIC_HEALTH_TOKEN     as `0x${string}`,
+  studyRegistry:  process.env.NEXT_PUBLIC_STUDY_REGISTRY   as `0x${string}`,
 };
