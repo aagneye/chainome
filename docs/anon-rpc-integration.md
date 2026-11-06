@@ -47,7 +47,7 @@ Page (useReadContract, useBalance)
 - **Batching.** A mixnet round trip costs ~0.5–3 s. Calls made in the same 10 ms window go out as one JSON-RPC batch. Measured on WorldChain Sepolia over Nox: 5 sequential reads 4.3 s, 5 parallel 1.4 s, 5 batched **0.39 s**.
 - **Per-wallet isolation.** `anonOptions.isolationKey` is the wallet address (a random session key before sign-in), so two wallets used on one device are not linkable by the network.
 - **Worker starts on app load**, so the mixnet is warm before the first page read. Calls made before `ready` are buffered by the harness.
-- **Two networks.** Nox is the default; Nym is a one-click backup in the badge if Nox's operators are down. Both are listed adopters in `ethereum/anon-rpc`.
+- **Two networks, picked per engine, with one automatic switch.** Nox is the default on Chromium (Android World App, Chrome). On WebKit (every iOS browser, so World App on iPhone) Nox's KPS exchange fails (`kps.exchange.failed` → `TOPOLOGY_FETCH_FAILED`) while Nym works, so WebKit starts on Nym. If the chosen network is not ready in time (Nox 20 s, Nym 60 s) or fails, the app switches once to the other one. Both are anon-rpc networks listed in `ethereum/anon-rpc`, so a switch never sends traffic directly. The user can also pick in the badge.
 
 ### Network choice (spike, 2026-11-06, venue wifi, target WorldChain Sepolia)
 
@@ -57,6 +57,14 @@ Page (useReadContract, useBalance)
 | Nym | ~10 s (spike) – 32 s (in app); ~18 MB bundle | 0.4–0.8 s warm, 5–13 s first | ✅ backup |
 | Tor (tor-js) | — | — | ❌ demo gateway unreachable |
 | Passthrough | 1 s | 0.4–1 s | reference only, no anonymity |
+
+iOS Simulator (iPhone 15 Pro, Safari = WebKit, same engine as World App on iPhone):
+
+| Network | Result |
+|---|---|
+| Passthrough | ✅ ready 7 s (sandbox and hash pinning work on WebKit) |
+| Nox | ❌ KPS peers dial, every exchange fails; retries forever |
+| **Nym** | ✅ ready 10–20 s, reads 0.6–8.5 s; in-app "Check now" read block 36,714,529 |
 
 ---
 
@@ -94,6 +102,6 @@ Everything else the browser asks the chain goes through Anon-RPC; the badge show
 
 ## Known limits / next steps
 
-- Not yet verified inside the World App webview (needs null-origin iframes + WebRTC).
+- Verified on iOS WebKit (Simulator Safari); not yet inside the World App binary itself.
 - Transactions could also be routed if the app signs them itself (outside World App).
 - Answer verification (light client / proofs) would close the "worker can lie" gap.

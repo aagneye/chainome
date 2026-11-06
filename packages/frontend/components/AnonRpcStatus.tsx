@@ -82,6 +82,7 @@ export default function AnonRpcStatus() {
             <dt className="text-gray-500">Failed</dt>
             <dd>{s.failedRequests}</dd>
           </dl>
+          {s.note && <p className="text-yellow-300 mb-3 break-words">{s.note}</p>}
           {s.error && <p className="text-red-400 mb-3 break-words">{s.error}</p>}
           <button
             onClick={runCheck}

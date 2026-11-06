@@ -14,6 +14,10 @@ import type { AnonRpcWorker } from "@anon-rpc/browser-harness";
  *   round trip costs ~0.5–3 s, so batching matters more than anything else).
  * - Each wallet gets its own isolationKey, so two wallets used on one device
  *   are not linkable by the network.
+ * - Nox is the default, but its KPS exchange fails on WebKit (iOS, so World
+ *   App on iPhone), where Nym works. WebKit starts on Nym, and if a network
+ *   is not ready in time we switch once to the other one. Both are anon-rpc
+ *   networks, so a switch never sends traffic directly.
  */
 
 export type AnonNetwork = "nox" | "nym";
@@ -35,6 +39,8 @@ export const ANON_NETWORKS: Record<AnonNetwork, { label: string; specifier: `0x$
 
 const NETWORK_STORAGE_KEY = "anon_rpc_network";
 const BATCH_WINDOW_MS = 10;
+// Measured: Nox ready in 3–6 s, Nym in 10–32 s (18 MB bundle on slow wifi).
+const READY_TIMEOUT_MS: Record<AnonNetwork, number> = { nox: 20_000, nym: 60_000 };
 
 export interface AnonRpcState {
   network: AnonNetwork;
@@ -45,6 +51,14 @@ export interface AnonRpcState {
   failedRequests: number;
   directRequests: number;  // always 0 — kept so the badge can prove it
   batches: number;
+  note?: string;           // e.g. why we switched network
+}
+
+/** iOS browsers and desktop Safari: every one of them is WebKit. */
+function isWebKit(): boolean {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent;
+  return /iPhone|iPad|iPod/.test(ua) || (/Safari/.test(ua) && !/Chrome|Chromium|Android/.test(ua));
 }
 
 function initialNetwork(): AnonNetwork {
@@ -52,6 +66,7 @@ function initialNetwork(): AnonNetwork {
     const stored = typeof window !== "undefined" ? window.localStorage.getItem(NETWORK_STORAGE_KEY) : null;
     if (stored === "nox" || stored === "nym") return stored;
   } catch {}
+  if (isWebKit()) return "nym";
   return process.env.NEXT_PUBLIC_ANON_RPC_NETWORK === "nym" ? "nym" : "nox";
 }
 
@@ -82,6 +97,18 @@ export function getAnonRpcState() {
 // ── Worker lifecycle ────────────────────────────────────────────────────────
 
 let workerPromise: Promise<AnonRpcWorker> | null = null;
+let failedOver = false;
+
+const OTHER: Record<AnonNetwork, AnonNetwork> = { nox: "nym", nym: "nox" };
+
+/** Switch once to the other anon-rpc network if this one does not come up. */
+function failOver(from: AnonNetwork, reason: string) {
+  if (failedOver || state.network !== from) return;
+  failedOver = true;
+  const to = OTHER[from];
+  switchNetwork(to, false);
+  setState({ note: `Switched to ${ANON_NETWORKS[to].label}: ${ANON_NETWORKS[from].label} ${reason}` });
+}
 
 function bootstrapProvider(url: string) {
   // Used once, to read the specifier contract. This single read is not
@@ -111,14 +138,21 @@ function getWorker(): Promise<AnonRpcWorker> {
         address: net.specifier,
         preExisting: { rpcProvider: bootstrapProvider(net.bootstrapRpc) },
       });
+      const timer = setTimeout(() => {
+        if (workerPromise === promise) failOver(network, `did not connect in ${READY_TIMEOUT_MS[network] / 1000} s`);
+      }, READY_TIMEOUT_MS[network]);
       worker.ready.then(
         () => {
+          clearTimeout(timer);
           if (workerPromise === promise) setState({ status: "ready", readyMs: Math.round(performance.now() - started) });
         },
         (err: unknown) => {
+          clearTimeout(timer);
           if (workerPromise !== promise) return;
+          const message = err instanceof Error ? err.message : String(err);
+          if (!failedOver) return failOver(network, `failed (${message})`);
           workerPromise = null; // next call retries with a fresh worker
-          setState({ status: "error", error: err instanceof Error ? err.message : String(err) });
+          setState({ status: "error", error: message });
         },
       );
       return worker;
@@ -134,16 +168,24 @@ export function startAnonRpc() {
   getWorker().catch(() => {});
 }
 
-export async function setAnonNetwork(network: AnonNetwork) {
-  if (network === state.network) return;
-  try {
-    window.localStorage.setItem(NETWORK_STORAGE_KEY, network);
-  } catch {}
+function switchNetwork(network: AnonNetwork, remember: boolean) {
+  if (remember) {
+    try {
+      window.localStorage.setItem(NETWORK_STORAGE_KEY, network);
+    } catch {}
+  }
   const old = workerPromise;
   workerPromise = null;
-  setState({ network, status: "idle" });
+  setState({ network, status: "idle", note: undefined });
   old?.then((w) => w.close()).catch(() => {});
   startAnonRpc();
+}
+
+/** User choice from the badge; remembered for next visit. */
+export function setAnonNetwork(network: AnonNetwork) {
+  if (network === state.network) return;
+  failedOver = true; // the user picked; don't auto-switch away from it
+  switchNetwork(network, true);
 }
 
 // ── Per-wallet isolation ────────────────────────────────────────────────────
