@@ -12,7 +12,7 @@ GenomeChain lets patients upload their medical records and genomic data, earn GN
 
 **Two layers:**
 - **Consumer app:** Upload bills, scans, prescriptions, lab reports, genomes → earn GNM. All transactions via Anon RPC (no IP→wallet linkage). Metadata indexed in Arkiv (patient-owned entities, consent-gated, GDPR-native expiry).
-- **Research marketplace:** Pharma publishes studies on-chain (StudyRegistry). Patients browse and consent. Institutions query Arkiv for matched cohorts. AI inference runs in 0G Private Computer (TEE) — only aggregate outputs returned.
+- **Research marketplace:** Pharma publishes studies on-chain (StudyRegistry). Patients browse and consent. Institutions query Arkiv for matched cohorts and see only the data types each patient consented to.
 
 ---
 
@@ -22,10 +22,8 @@ GenomeChain lets patients upload their medical records and genomic data, earn GN
 |-------|-------------|
 | **World** | World ID Orb verification gating genome submission. `nullifier_hash` enforces one-genome-per-human. PBH for gas subsidies. Anon RPC for IP privacy. |
 | **Arkiv** | Medical record metadata stored as owned patient entities. Consent-gated by on-chain ConsentManager. 10-year GDPR expiry. Cross-institution queryable without centralized broker. |
-| **0G** | AI inference on encrypted genomic data inside TEE. Raw data never leaves patient control. |
-| **EF** | OP Stack L2 (WorldChain). All 7 contracts EVM-standard. |
-| **ENS** | Institution profiles in StudyRegistry resolve via ENS. |
-| **Definitive** | Genome-anchored RWD with on-chain consent audit trail. |
+| **Ethereum Foundation** | OP Stack L2 (WorldChain). All contracts EVM-standard. |
+| **Anon RPC** | Every patient transaction is broadcast through Anon RPC, so no IP address is linked to a wallet that holds medical records. |
 
 ---
 
@@ -39,9 +37,7 @@ Patient → encrypt(AES-256) → Lighthouse/IPFS → CID on WorldChain
                                                       │
                                          Institution queries (with consent)
                                                       │
-                                         0G Private Computer (TEE)
-                                                      │
-                                              Aggregate outputs only
+                                         Only consented data types shared
 ```
 
 Contracts (all on WorldChain): `GenomeRegistry`, `RecordVault`, `ConsentManager`, `HealthToken`, `LabRegistry`, `LabAttestation`, `ProtocolRegistry`.
@@ -94,7 +90,6 @@ Network: WorldChain Sepolia (chain ID 4801) for testnet, WorldChain mainnet (cha
 | File storage | Lighthouse SDK (IPFS + Filecoin), AES-256 client-side encryption |
 | Metadata DB | Arkiv — `medical_record_v1` entities, patient-owned |
 | Privacy RPC | WorldChain Anon RPC |
-| Confidential compute | 0G Private Computer (TEE) |
 | Frontend | Next.js, Wagmi, Viem |
 | Token | ERC-20 GNM with MINTER_ROLE |
 

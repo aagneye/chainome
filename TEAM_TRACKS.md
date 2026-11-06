@@ -36,7 +36,7 @@ ETHGlobal Mumbai 2026 · 3 tracks, parallel, independent.
 6. Update `README.md` contract addresses table with deployed addresses, commit + push
 7. Submit project on ETHGlobal: https://ethglobal.com/events/mumbai
    - Link GitHub repo
-   - Tag prize tracks: **World** (Best Use of IDKit), **Arkiv** (Build on Arkiv), **0G** (Private Computer), **EF** (ProtocolRegistry)
+   - Tag prize tracks: **World** (Best Use of IDKit), **Arkiv** (Build on Arkiv), **Ethereum Foundation**, **Anon RPC**
    - Add demo video / screenshots
 
 ### Deploy order (handled by deploy.ts automatically)
