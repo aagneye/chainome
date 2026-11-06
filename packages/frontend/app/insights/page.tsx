@@ -1,13 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAccount, useReadContract } from "wagmi";
+import { useReadContract } from "wagmi";
 import { useRouter } from "next/navigation";
-import { IDKitWidget, VerificationLevel } from "@worldcoin/idkit";
+import { MiniKit, VerificationLevel } from "@worldcoin/minikit-js";
 import { CONTRACTS } from "@/lib/contracts";
 import Skeleton from "@/components/Skeleton";
-
-const APP_ID = process.env.NEXT_PUBLIC_WLD_APP_ID as `app_${string}`;
+import { useMiniKitAddress } from "@/hooks/useMiniKitAddress";
 
 interface RiskScore {
   condition: string;
@@ -51,7 +50,7 @@ function Skeleton({ className }: { className?: string }) {
 }
 
 export default function InsightsPage() {
-  const { address } = useAccount();
+  const address = useMiniKitAddress();
   const router = useRouter();
   const [insights, setInsights] = useState<HealthInsights | null>(null);
   const [loading, setLoading] = useState(false);
@@ -153,25 +152,24 @@ export default function InsightsPage() {
             AI-generated health insights require World ID Agent Pass verification.
             This prevents AI interpretations from being attributed to unverified actors.
           </p>
-          <IDKitWidget
-            app_id={APP_ID}
-            action="request_health_insights"
-            signal={address ?? ""}
-            onSuccess={(result) => {
-              sessionStorage.setItem("agent_pass_proof", JSON.stringify(result));
-              setAgentPassVerified(true);
+          <button
+            onClick={async () => {
+              if (!MiniKit.isInstalled()) return;
+              const { finalPayload } = await MiniKit.commandsAsync.verify({
+                action: "request_health_insights",
+                signal: address ?? "",
+                verification_level: VerificationLevel.Device,
+              });
+              if (finalPayload.status !== "error") {
+                sessionStorage.setItem("agent_pass_proof", JSON.stringify(finalPayload));
+                setAgentPassVerified(true);
+                fetchInsights();
+              }
             }}
-            verification_level={VerificationLevel.Device}
+            className="px-5 py-2.5 rounded-lg bg-genome-violet text-white font-semibold hover:opacity-90 transition shadow-[0_0_20px_rgba(139,92,246,0.3)]"
           >
-            {({ open }) => (
-              <button
-                onClick={open}
-                className="px-5 py-2.5 rounded-lg bg-genome-violet text-white font-semibold hover:opacity-90 transition shadow-[0_0_20px_rgba(139,92,246,0.3)]"
-              >
-                Unlock with Agent Pass
-              </button>
-            )}
-          </IDKitWidget>
+            Unlock with Agent Pass
+          </button>
           <p className="text-xs text-gray-600 mt-4">
             Uses Device verification — no Orb required · Proof expires per session
           </p>
