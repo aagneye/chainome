@@ -4,6 +4,7 @@ pragma solidity ^0.8.26;
 import "./interfaces/IWorldID.sol";
 import "./libs/ByteHasher.sol";
 import "./HealthToken.sol";
+import "./LabAttestation.sol";
 
 /// @title GenomeRegistry
 /// @notice One genome CID per Orb-verified human. World ID Incognito Action gate.
@@ -15,11 +16,13 @@ contract GenomeRegistry {
     // ── Errors ──────────────────────────────────────────────────────────────
     error AlreadySubmitted();
     error InvalidCID();
+    error NotLabAttested();
 
     // ── State ────────────────────────────────────────────────────────────────
-    IWorldID    public immutable worldId;
-    HealthToken public immutable token;
-    uint256     public immutable externalNullifierHash;
+    IWorldID       public immutable worldId;
+    HealthToken    public immutable token;
+    LabAttestation public immutable labAttestation;
+    uint256        public immutable externalNullifierHash;
     uint256     internal constant GROUP_ID = 1; // 1 = Orb-verified
 
     mapping(uint256 nullifierHash => bool) public nullifierUsed;
@@ -40,9 +43,10 @@ contract GenomeRegistry {
     /// @param _appId    World ID app ID (e.g. "app_staging_abc123").
     /// @param _action   Action string (e.g. "genome_submission").
     /// @param _token    HealthToken to mint GENOME_REWARD on success.
-    constructor(IWorldID _worldId, string memory _appId, string memory _action, HealthToken _token) {
-        worldId = _worldId;
-        token   = _token;
+    constructor(IWorldID _worldId, string memory _appId, string memory _action, HealthToken _token, LabAttestation _labAttestation) {
+        worldId        = _worldId;
+        token          = _token;
+        labAttestation = _labAttestation;
         externalNullifierHash = abi
             .encodePacked(abi.encodePacked(_appId).hashToField(), _action)
             .hashToField();
@@ -73,6 +77,8 @@ contract GenomeRegistry {
             externalNullifierHash,
             proof
         );
+
+        if (!labAttestation.isValid(nullifierHash, cid)) revert NotLabAttested();
 
         nullifierUsed[nullifierHash] = true;
         genomeCID[nullifierHash] = cid;
