@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useAccount, useWriteContract } from "wagmi";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { MiniKit } from "@worldcoin/minikit-js";
+import { useMiniKitAddress } from "@/hooks/useMiniKitAddress";
 import { parseEther } from "viem";
 import { CONTRACTS, DATASET_REGISTRY_ABI } from "@/lib/contracts";
 
@@ -62,12 +62,13 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 export default function DatasetsPage() {
-  const { isConnected } = useAccount();
+  const address = useMiniKitAddress();
+  const isConnected = !!address;
   const [activeCategory, setActiveCategory] = useState<Category>("All");
   const [showPublish, setShowPublish] = useState(false);
   const [purchasedIds, setPurchasedIds] = useState<Set<number>>(new Set());
 
-  const { writeContractAsync, isPending } = useWriteContract();
+  const [loading, setLoading] = useState(false);
 
   const filtered =
     activeCategory === "All"
@@ -76,24 +77,29 @@ export default function DatasetsPage() {
 
   async function handlePurchase(id: number) {
     if (!isConnected) return;
+    setLoading(true);
     try {
-      await writeContractAsync({
-        address: CONTRACTS.datasetRegistry,
-        abi: DATASET_REGISTRY_ABI,
-        functionName: "purchaseAccess",
-        args: [BigInt(id)],
+      const { finalPayload } = await MiniKit.commandsAsync.sendTransaction({
+        transaction: [{
+          address: CONTRACTS.datasetRegistry as `0x${string}`,
+          abi: DATASET_REGISTRY_ABI,
+          functionName: "purchaseAccess",
+          args: [BigInt(id)],
+        }],
       });
+      if (finalPayload.status === "error") throw new Error(finalPayload.error_code);
       setPurchasedIds((prev) => new Set([...prev, id]));
     } catch (err) {
       console.error("purchaseAccess failed", err);
+    } finally {
+      setLoading(false);
     }
   }
 
   if (!isConnected) {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center gap-4 px-4">
-        <p className="text-gray-400">Connect wallet to browse the dataset marketplace</p>
-        <ConnectButton />
+        <p className="text-gray-400">Open in World App to browse the dataset marketplace</p>
       </main>
     );
   }
@@ -188,10 +194,10 @@ export default function DatasetsPage() {
                 ) : (
                   <button
                     onClick={() => handlePurchase(ds.id)}
-                    disabled={isPending}
+                    disabled={loading}
                     className="px-4 py-1.5 rounded-xl bg-genome-teal/20 border border-genome-teal/40 text-genome-teal text-xs font-semibold hover:bg-genome-teal/30 transition disabled:opacity-50"
                   >
-                    {isPending ? "Buying…" : "Buy Access"}
+                    {loading ? "Buying…" : "Buy Access"}
                   </button>
                 )}
               </div>
@@ -209,7 +215,7 @@ export default function DatasetsPage() {
 }
 
 function PublishModal({ onClose }: { onClose: () => void }) {
-  const { writeContractAsync, isPending } = useWriteContract();
+  const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     name: "",
     slug: "",
@@ -235,23 +241,29 @@ function PublishModal({ onClose }: { onClose: () => void }) {
     if (!form.name || !form.slug) { setStatus("Name and slug required"); return; }
     const cid = form.cid || "QmPlaceholderCID_" + form.slug;
     setStatus("Submitting…");
+    setLoading(true);
     try {
-      await writeContractAsync({
-        address: CONTRACTS.datasetRegistry,
-        abi: DATASET_REGISTRY_ABI,
-        functionName: "publishDataset",
-        args: [
-          form.name,
-          form.slug,
-          cid,
-          form.description,
-          form.category,
-          parseEther(form.priceGNM || "0"),
-        ],
+      const { finalPayload } = await MiniKit.commandsAsync.sendTransaction({
+        transaction: [{
+          address: CONTRACTS.datasetRegistry as `0x${string}`,
+          abi: DATASET_REGISTRY_ABI,
+          functionName: "publishDataset",
+          args: [
+            form.name,
+            form.slug,
+            cid,
+            form.description,
+            form.category,
+            parseEther(form.priceGNM || "0"),
+          ],
+        }],
       });
+      if (finalPayload.status === "error") throw new Error(finalPayload.error_code);
       setStatus("Published! ENS subname: " + form.slug + ".genomechain.eth");
     } catch (err: any) {
       setStatus("Error: " + (err?.shortMessage ?? err?.message ?? "unknown"));
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -327,10 +339,10 @@ function PublishModal({ onClose }: { onClose: () => void }) {
           )}
           <button
             type="submit"
-            disabled={isPending}
+            disabled={loading}
             className="w-full py-2.5 rounded-xl bg-genome-teal text-black font-semibold text-sm hover:opacity-90 transition disabled:opacity-50"
           >
-            {isPending ? "Publishing…" : "Publish Dataset"}
+            {loading ? "Publishing…" : "Publish Dataset"}
           </button>
         </form>
       </div>
