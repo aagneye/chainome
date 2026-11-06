@@ -176,7 +176,7 @@ export default function ConsentPage() {
 
           <button
             onClick={mode === "grant" ? handleGrant : () => setShowRevokeConfirm(true)}
-            disabled={!institution || granting || revoking || (mode === "revoke" && showRevokeConfirm)}
+            disabled={!institution || granting || revoking || (mode === "revoke" && showRevokeConfirm) || !CONTRACTS.consentManager}
             className={`w-full px-6 py-3 rounded-lg font-semibold transition-all active:scale-[0.98] disabled:opacity-40 ${
               mode === "revoke"
                 ? "bg-red-600 hover:bg-red-500 text-white"

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Providers } from "./providers";
 import { Nav } from "@/components/Nav";
+import NoContractBanner from "@/components/NoContractBanner";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -14,6 +15,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="pt-14">
         <Providers>
           <Nav />
+          <NoContractBanner />
           {children}
         </Providers>
       </body>

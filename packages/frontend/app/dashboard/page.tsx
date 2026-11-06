@@ -98,7 +98,7 @@ export default function DashboardPage() {
     abi: RECORD_VAULT_ABI,
     functionName: "recordCount",
     args: address ? [address] : undefined,
-    query: { enabled: !!address },
+    query: { enabled: !!address && !!CONTRACTS.recordVault },
   });
 
   const hasGenome =

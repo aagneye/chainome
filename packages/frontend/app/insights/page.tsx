@@ -70,7 +70,7 @@ export default function InsightsPage() {
     abi: CONTRACTS.genomeRegistry.abi,
     functionName: "genomeCID",
     args: nullifierHash ? [BigInt(nullifierHash)] : undefined,
-    query: { enabled: !!nullifierHash },
+    query: { enabled: !!nullifierHash && !!CONTRACTS.genomeRegistry },
   });
 
   const { data: recordCount } = useReadContract({
@@ -78,7 +78,7 @@ export default function InsightsPage() {
     abi: CONTRACTS.recordVault.abi,
     functionName: "getRecordCount",
     args: address ? [address] : undefined,
-    query: { enabled: !!address },
+    query: { enabled: !!address && !!CONTRACTS.recordVault },
   });
 
   async function fetchInsights() {
