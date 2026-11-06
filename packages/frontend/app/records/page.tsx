@@ -2,12 +2,15 @@
 
 import { useState, useCallback } from "react";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
-import { CONTRACTS } from "@/lib/contracts";
+import { CONTRACTS, RECORD_VAULT_ABI } from "@/lib/contracts";
+import { encryptForPatient } from "@/lib/genome-crypto";
+import { usePatientKey } from "@/lib/use-patient-key";
 
 const RECORD_TYPES = ["Lab Report", "Prescription", "Imaging", "Vaccination", "Clinical Notes", "Other"];
 
 export default function RecordsPage() {
   const { address } = useAccount();
+  const patientKey = usePatientKey();
   const [file, setFile] = useState<File | null>(null);
   const [recordType, setRecordType] = useState(RECORD_TYPES[0]);
   const [uploading, setUploading] = useState(false);
@@ -26,49 +29,48 @@ export default function RecordsPage() {
 
   async function handleSubmit() {
     if (!file || !address) return;
+    if (!patientKey.publicKey) {
+      await patientKey.derive();
+      return;
+    }
     setError(null);
     setUploading(true);
     setUploadPct(10);
 
     try {
+      // Encrypted here, before anything leaves the device.
+      const sealed = await encryptForPatient(file, patientKey.publicKey);
+      setUploadPct(40);
+
+      const nullifier: string | undefined = JSON.parse(sessionStorage.getItem("wld_proof") ?? "{}").nullifier_hash;
       const form = new FormData();
-      form.append("file", file);
-
-      // Fake progress ticks while request is in-flight
-      const ticker = setInterval(() => setUploadPct((p) => Math.min(p + 15, 85)), 400);
-
-      const res = await fetch("https://node.lighthouse.storage/api/v0/add", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${process.env.NEXT_PUBLIC_LIGHTHOUSE_API_KEY}` },
-        body: form,
-      });
-
-      clearInterval(ticker);
-
-      if (!res.ok) throw new Error("IPFS upload failed");
-      setUploadPct(100);
-      const data = await res.json();
-      const ipfsCid = data.Hash as string;
-      setCid(ipfsCid);
-
-      // Background: write metadata to Arkiv (Web3 DB-chain) — fire and forget
-      fetch("/api/arkiv-record", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ownerAddress:  address,
-          nullifierHash: JSON.parse(sessionStorage.getItem("wld_proof") ?? "{}").nullifier_hash ?? "0",
-          recordType:    recordType.toLowerCase().replace(" ", "_"),
-          cid:           ipfsCid,
-          date:          new Date().toISOString().split("T")[0],
+      form.append("cipher", new Blob([sealed.cipher as BlobPart]));
+      form.append(
+        "meta",
+        JSON.stringify({
+          patient: address,
+          anonId: nullifier ? BigInt(nullifier).toString(16).padStart(64, "0").slice(0, 16) : "unverified",
+          recordType: recordType.toLowerCase().replace(/ /g, "_"),
+          mimeType: file.type || "application/octet-stream",
+          plainBytes: sealed.plainBytes,
+          sha256Plain: sealed.sha256Plain,
+          sha256Cipher: sealed.sha256Cipher,
+          wrappedKey: sealed.wrappedKey,
         }),
-      }).catch((e) => console.warn("[arkiv-record] background write failed", e));
+      );
+
+      // Ciphertext → Swarm, record index → Arkiv (server holds the postage batch + Arkiv writer key)
+      const res = await fetch("/api/records", { method: "POST", body: form });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error ?? "Upload failed");
+      setUploadPct(100);
+      setCid(body.manifestRef);
 
       writeContract({
-        address: CONTRACTS.recordVault.address as `0x${string}`,
-        abi: CONTRACTS.recordVault.abi,
+        address: CONTRACTS.recordVault,
+        abi: RECORD_VAULT_ABI,
         functionName: "addRecord",
-        args: [ipfsCid, recordType],
+        args: [body.manifestRef, recordType],
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
@@ -88,7 +90,7 @@ export default function RecordsPage() {
           </div>
           <h2 className="text-2xl font-bold text-genome-teal mb-2">Record Stored</h2>
           <p className="text-gray-400 text-sm">
-            CID: <code className="text-genome-teal break-all">{cid}</code>
+            Swarm manifest: <code className="text-genome-teal break-all">{cid}</code>
           </p>
           <p className="text-xs text-gray-500 mt-1">+10 GNM tokens minted to your wallet</p>
         </div>
@@ -107,7 +109,7 @@ export default function RecordsPage() {
       <div className="animate-slide-up text-center max-w-sm">
         <h2 className="text-2xl font-bold text-genome-teal mb-2">Add Health Record</h2>
         <p className="text-gray-400 text-sm">
-          Upload any medical document. Encrypted, stored on IPFS, anchored on WorldChain.
+          Upload any medical document. Encrypted on this device to your key, stored on Swarm, indexed on Arkiv, anchored on World Chain.
           Earn 10 GNM per record.
         </p>
       </div>
@@ -169,7 +171,7 @@ export default function RecordsPage() {
         {uploading && (
           <div className="animate-fade-in">
             <div className="flex justify-between text-xs text-gray-500 mb-1">
-              <span>Uploading to IPFS…</span>
+              <span>Encrypting &amp; uploading to Swarm…</span>
               <span>{uploadPct}%</span>
             </div>
             <div className="h-1.5 w-full rounded-full bg-genome-border overflow-hidden">
