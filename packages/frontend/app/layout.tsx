@@ -10,7 +10,20 @@ const AnonRpcStatus = dynamic(() => import("@/components/AnonRpcStatus"), { ssr:
 
 export const metadata: Metadata = {
   title: "Chainome",
-  description: "Patient-sovereign genome + health records on WorldChain",
+  description: "Patient-sovereign genomic data marketplace on WorldChain. Sign in with World ID, upload your genome, earn 500 GNM tokens, and control who accesses your data.",
+  metadataBase: new URL("https://chainome.vercel.app"),
+  openGraph: {
+    title: "Chainome",
+    description: "Your genome. Your data. Your future. Patient-sovereign genomic marketplace on WorldChain.",
+    url: "https://chainome.vercel.app",
+    siteName: "Chainome",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Chainome",
+    description: "Your genome. Your data. Your future. Patient-sovereign genomic marketplace on WorldChain.",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
