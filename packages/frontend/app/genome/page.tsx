@@ -25,6 +25,7 @@ export default function GenomePage() {
   const [cid, setCid] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [statusMsg, setStatusMsg] = useState<string | null>(null);
   const progressRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const { writeContract, data: txHash, isPending } = useWriteContract();
@@ -69,6 +70,7 @@ export default function GenomePage() {
   async function handleSubmit() {
     if (!file || !address) return;
     setError(null);
+    setStatusMsg(null);
     setUploading(true);
     fakeProgress();
 
@@ -79,12 +81,28 @@ export default function GenomePage() {
         return;
       }
       const proof: ISuccessResult = JSON.parse(proofRaw);
+
+      setStatusMsg("Uploading to IPFS…");
       const ipfsCid = await uploadToIPFS();
 
       if (progressRef.current) clearInterval(progressRef.current);
       setProgress(100);
       setCid(ipfsCid);
 
+      setStatusMsg("Getting lab attestation…");
+      const attestRes = await fetch("/api/lab-attest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nullifierHash: proof.nullifier_hash,
+          genomeCID: ipfsCid,
+        }),
+      });
+      if (!attestRes.ok) throw new Error("Lab attestation failed");
+      const { uid } = await attestRes.json();
+      setStatusMsg(`Attested ✓ (${uid.slice(0, 10)}…)`);
+
+      setStatusMsg("Submitting to WorldChain…");
       writeContract({
         address: CONTRACTS.genomeRegistry as `0x${string}`,
         abi: GENOME_REGISTRY_ABI,
@@ -100,6 +118,7 @@ export default function GenomePage() {
     } catch (err) {
       if (progressRef.current) clearInterval(progressRef.current);
       setProgress(0);
+      setStatusMsg(null);
       setError(err instanceof Error ? err.message : "Upload failed");
     } finally {
       setUploading(false);
@@ -227,12 +246,12 @@ export default function GenomePage() {
         />
       </div>
 
-      {/* Progress bar */}
-      {(uploading || progress > 0) && progress < 100 && (
+      {/* Progress bar + status */}
+      {(uploading || progress > 0) && (
         <div className="w-full max-w-md">
           <div className="flex justify-between text-xs text-gray-500 mb-1.5">
-            <span>Uploading to IPFS via Lighthouse…</span>
-            <span>{Math.round(progress)}%</span>
+            <span>{statusMsg ?? "Uploading to IPFS via Lighthouse…"}</span>
+            {progress < 100 && <span>{Math.round(progress)}%</span>}
           </div>
           <div className="h-1.5 w-full rounded-full bg-genome-border overflow-hidden">
             <div
@@ -251,7 +270,7 @@ export default function GenomePage() {
         className="px-8 py-3 rounded-xl bg-genome-teal text-black font-bold text-sm hover:opacity-90 transition disabled:opacity-40"
       >
         {uploading
-          ? "Uploading to IPFS…"
+          ? (statusMsg ?? "Uploading…")
           : isPending
           ? "Confirming on-chain…"
           : "Submit Genome · Earn 500 GNM"}
