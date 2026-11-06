@@ -6,6 +6,7 @@ import NoContractBanner from "@/components/NoContractBanner";
 import "./globals.css";
 
 const MiniKitProvider = dynamic(() => import("@/components/MiniKitProvider"), { ssr: false });
+const AnonRpcStatus = dynamic(() => import("@/components/AnonRpcStatus"), { ssr: false });
 
 export const metadata: Metadata = {
   title: "GenomeChain",
@@ -21,6 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Nav />
             <NoContractBanner />
             {children}
+            <AnonRpcStatus />
           </MiniKitProvider>
         </Providers>
       </body>
