@@ -77,6 +77,12 @@ async function main() {
   await token.grantRole(MINTER_ROLE, await vault.getAddress());
   console.log("MINTER_ROLE granted to registry + vault");
 
+  // 11. DatasetRegistry
+  const DatasetRegistry = await ethers.getContractFactory("DatasetRegistry");
+  const datasetRegistry = await DatasetRegistry.deploy(await token.getAddress());
+  await datasetRegistry.waitForDeployment();
+  console.log(`DatasetRegistry:     ${await datasetRegistry.getAddress()}`);
+
   console.log("\n── Add to .env ──────────────────────────────────────");
   console.log(`NEXT_PUBLIC_HEALTH_TOKEN=${await token.getAddress()}`);
   console.log(`NEXT_PUBLIC_LAB_REGISTRY=${await labRegistry.getAddress()}`);
@@ -85,6 +91,7 @@ async function main() {
   console.log(`NEXT_PUBLIC_RECORD_VAULT=${await vault.getAddress()}`);
   console.log(`NEXT_PUBLIC_CONSENT_MANAGER=${await consent.getAddress()}`);
   console.log(`NEXT_PUBLIC_PROTOCOL_REGISTRY=${await protocols.getAddress()}`);
+  console.log(`NEXT_PUBLIC_DATASET_REGISTRY=${await datasetRegistry.getAddress()}`);
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });
