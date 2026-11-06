@@ -3,15 +3,9 @@ import { NextRequest, NextResponse } from "next/server";
 /**
  * POST /api/health-insights
  *
- * Routes genome + records through 0G Private Computer for privacy-preserving
- * AI inference. Raw data never leaves the patient's encrypted node — only
- * the CIDs are passed; 0G compute fetches and processes them inside a
- * confidential execution environment.
- *
- * 0G Private Computer track: $5,000 prize at ETHGlobal Mumbai 2026.
- *
- * Production: replace stub with real 0G API call.
- * Docs: https://docs.0g.ai/build-with-0g/compute-network
+ * Returns demo genomic insights for the /insights page, which is gated by a
+ * World ID Agent Pass proof. Scores are sample values derived from the
+ * genome CID, not a real analysis.
  */
 
 interface InsightRequest {
@@ -41,11 +35,11 @@ interface HealthInsights {
   pharmacogenomics:  PharmacogenomicsEntry[];
   ancestryMarkers:   { population: string; proportion: number }[];
   computedAt:        number;
-  source:            "0g-private-compute" | "stub";
+  source:            "demo";
 }
 
-// ── Stub — replace with real 0G Private Computer call ──────────────────────
-function generateStubInsights(genomeCID: string): HealthInsights {
+// ── Demo insights ───────────────────────────────────────────────────────────
+function generateDemoInsights(genomeCID: string): HealthInsights {
   // Deterministic variation from CID so it feels real per-patient
   const seed = genomeCID.charCodeAt(2) % 10;
 
@@ -102,39 +96,8 @@ function generateStubInsights(genomeCID: string): HealthInsights {
       { population: "East Asian",   proportion: 0.10 - seed * 0.01 },
     ],
     computedAt: Date.now(),
-    source: "stub",
+    source: "demo",
   };
-}
-
-// ── Real 0G Private Computer call (uncomment when API key available) ────────
-async function call0GPrivateCompute(req: InsightRequest): Promise<HealthInsights> {
-  const apiKey = process.env.ZERO_G_API_KEY;
-  if (!apiKey) throw new Error("ZERO_G_API_KEY not set");
-
-  // 0G Private Computer: confidential execution environment
-  // Raw data fetched by 0G node from IPFS inside the TEE — never exposed
-  const response = await fetch("https://api.0g.ai/v1/private-compute/infer", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model:    "genomic-risk-v1",
-      inputs: {
-        genome_cid:   req.genomeCID,
-        record_cids:  req.recordCIDs,
-        patient_id:   req.nullifierHash, // anonymous — no PII
-      },
-      privacy: {
-        mode: "confidential",
-        output_only: true, // only computed insights returned, never raw data
-      },
-    }),
-  });
-
-  if (!response.ok) throw new Error(`0G API error: ${response.status}`);
-  return response.json();
 }
 
 export async function POST(req: NextRequest) {
@@ -145,15 +108,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "genomeCID required" }, { status: 400 });
     }
 
-    let insights: HealthInsights;
-
-    if (process.env.ZERO_G_API_KEY) {
-      insights = await call0GPrivateCompute(body);
-    } else {
-      // Stub mode — deterministic from genomeCID
-      insights = generateStubInsights(body.genomeCID);
-    }
-
+    const insights: HealthInsights = generateDemoInsights(body.genomeCID);
     return NextResponse.json(insights);
   } catch (err) {
     console.error("[health-insights]", err);
