@@ -106,7 +106,7 @@ export default function VerifyPage() {
         onError={onError}
         verification_level={VerificationLevel.Orb}
       >
-        {({ open }) => (
+        {({ open }: { open: () => void }) => (
           <div className="flex flex-col items-center gap-3">
             <button
               onClick={() => { setError(null); setStatus("verifying"); open(); }}

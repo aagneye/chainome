@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract } from "wagmi";
-import { CONTRACTS } from "@/lib/contracts";
+import { CONTRACTS, CONSENT_MANAGER_ABI } from "@/lib/contracts";
 
 export default function ConsentPage() {
   const { address } = useAccount();
@@ -19,8 +19,8 @@ export default function ConsentPage() {
   const { isSuccess: revokeOk } = useWaitForTransactionReceipt({ hash: revokeHash });
 
   const { refetch: checkConsent } = useReadContract({
-    address: CONTRACTS.consentManager.address as `0x${string}`,
-    abi: CONTRACTS.consentManager.abi,
+    address: CONTRACTS.consentManager,
+    abi: CONSENT_MANAGER_ABI,
     functionName: "hasConsent",
     args: address && checkAddr ? [address, checkAddr as `0x${string}`] : undefined,
     query: { enabled: false },
@@ -30,8 +30,8 @@ export default function ConsentPage() {
     if (!institution) return;
     const expiry = BigInt(Math.floor(Date.now() / 1000) + expireDays * 86400);
     grant({
-      address: CONTRACTS.consentManager.address as `0x${string}`,
-      abi: CONTRACTS.consentManager.abi,
+      address: CONTRACTS.consentManager,
+      abi: CONSENT_MANAGER_ABI,
       functionName: "grantConsent",
       args: [institution as `0x${string}`, expiry, "0x" + "0".repeat(64) as `0x${string}`],
     });
@@ -40,8 +40,8 @@ export default function ConsentPage() {
   async function handleRevoke() {
     if (!institution) return;
     revoke({
-      address: CONTRACTS.consentManager.address as `0x${string}`,
-      abi: CONTRACTS.consentManager.abi,
+      address: CONTRACTS.consentManager,
+      abi: CONSENT_MANAGER_ABI,
       functionName: "revokeConsent",
       args: [institution as `0x${string}`],
     });

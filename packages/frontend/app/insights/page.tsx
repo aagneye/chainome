@@ -3,9 +3,8 @@
 import { useState, useEffect } from "react";
 import { useAccount, useReadContract } from "wagmi";
 import { useRouter } from "next/navigation";
-import { IDKitWidget, VerificationLevel } from "@worldcoin/idkit";
-import { CONTRACTS } from "@/lib/contracts";
-import Skeleton from "@/components/Skeleton";
+import { IDKitWidget, VerificationLevel, type ISuccessResult } from "@worldcoin/idkit";
+import { CONTRACTS, GENOME_REGISTRY_ABI, RECORD_VAULT_ABI } from "@/lib/contracts";
 
 const APP_ID = process.env.NEXT_PUBLIC_WLD_APP_ID as `app_${string}`;
 
@@ -66,17 +65,17 @@ export default function InsightsPage() {
   const nullifierHash = proofRaw ? JSON.parse(proofRaw).nullifier_hash : null;
 
   const { data: genomeCID } = useReadContract({
-    address: CONTRACTS.genomeRegistry.address as `0x${string}`,
-    abi: CONTRACTS.genomeRegistry.abi,
+    address: CONTRACTS.genomeRegistry,
+    abi: GENOME_REGISTRY_ABI,
     functionName: "genomeCID",
     args: nullifierHash ? [BigInt(nullifierHash)] : undefined,
     query: { enabled: !!nullifierHash && !!CONTRACTS.genomeRegistry },
   });
 
   const { data: recordCount } = useReadContract({
-    address: CONTRACTS.recordVault.address as `0x${string}`,
-    abi: CONTRACTS.recordVault.abi,
-    functionName: "getRecordCount",
+    address: CONTRACTS.recordVault,
+    abi: RECORD_VAULT_ABI,
+    functionName: "recordCount",
     args: address ? [address] : undefined,
     query: { enabled: !!address && !!CONTRACTS.recordVault },
   });
@@ -157,13 +156,13 @@ export default function InsightsPage() {
             app_id={APP_ID}
             action="request_health_insights"
             signal={address ?? ""}
-            onSuccess={(result) => {
+            onSuccess={(result: ISuccessResult) => {
               sessionStorage.setItem("agent_pass_proof", JSON.stringify(result));
               setAgentPassVerified(true);
             }}
             verification_level={VerificationLevel.Device}
           >
-            {({ open }) => (
+            {({ open }: { open: () => void }) => (
               <button
                 onClick={open}
                 className="px-5 py-2.5 rounded-lg bg-genome-violet text-white font-semibold hover:opacity-90 transition shadow-[0_0_20px_rgba(139,92,246,0.3)]"
