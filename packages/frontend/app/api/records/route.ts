@@ -54,7 +54,8 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const bee = new Bee(beeUrl);
+    // BEE_PROXY_TOKEN: the lab node exposes Bee at https://<lab>/bee behind a bearer token.
+    const bee = new Bee(beeUrl, process.env.BEE_PROXY_TOKEN ? { headers: { authorization: `Bearer ${process.env.BEE_PROXY_TOKEN}` } } : undefined);
     const fileRef = (await bee.data.upload(batchId, bytes, { pin: true })).reference.toHex();
     const manifest: RecordManifest = {
       version: 1,
