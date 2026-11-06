@@ -29,7 +29,7 @@ interface HealthInsights {
   pharmacogenomics: PharmacogenomicsEntry[];
   ancestryMarkers: { population: string; proportion: number }[];
   computedAt: number;
-  source: "0g-private-compute" | "stub";
+  source: "demo";
 }
 
 const RISK_COLOR: Record<string, string> = {
@@ -117,13 +117,8 @@ export default function InsightsPage() {
       <div className="animate-slide-up mb-8">
         <h1 className="text-3xl font-bold text-genome-teal mb-1">Health Insights</h1>
         <p className="text-gray-400 text-sm leading-relaxed">
-          Computed via{" "}
-          <span className="text-genome-violet font-medium">0G Private Compute</span>
-          {" "}— your genome CID is processed inside a confidential execution environment.
-          Raw data never leaves your encrypted node.
-          {insights?.source === "stub" && (
-            <span className="ml-1 text-gray-600">(stub mode — no ZERO_G_API_KEY set)</span>
-          )}
+          Unlocked with a World ID Agent Pass, so only a verified human can request insights.
+          <span className="ml-1 text-gray-600">(demo scores — not a medical result)</span>
         </p>
       </div>
 

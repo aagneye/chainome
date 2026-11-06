@@ -12,22 +12,18 @@ GenomeChain lets patients upload their medical records and genomic data, earn GN
 
 **Two layers:**
 - **Consumer app:** Upload bills, scans, prescriptions, lab reports, genomes → earn GNM. All transactions via Anon RPC (no IP→wallet linkage). Metadata indexed in Arkiv (patient-owned entities, consent-gated, GDPR-native expiry).
-- **Research marketplace:** Pharma publishes studies on-chain (StudyRegistry). Patients browse and consent. Institutions query Arkiv for matched cohorts. AI inference runs in 0G Private Computer (TEE) — only aggregate outputs returned.
+- **Research marketplace:** Pharma publishes studies on-chain (StudyRegistry). Patients browse and consent. Institutions query Arkiv for matched cohorts and see only the data types each patient consented to.
 
 ---
 
 ## Prize Tracks
 
-| Track | Prize | Integration |
-|-------|-------|-------------|
-| **World — IDKit** | $2,500 | World ID Orb gating genome submission. `nullifier_hash` = one-genome-per-human Sybil resistance. Full denied/cancel path. IDKit debrief doc. |
-| **World — Agent Pass** | $5,000 | MiniKit verify gates AI health insights on `/insights`. Prevents AI risk scores from being attributed to unverified actors. |
-| **Arkiv** | $4,000 | Medical record metadata as patient-owned Arkiv entities. Consent-gated, GDPR expiry, cross-institution queryable. 5/5 prize submission files in `docs/arkiv/`. |
-| **0G** | $15,000 | `/api/health-insights` calls 0G Private Computer TEE. Polygenic risk scores, pharmacogenomics, ancestry computed on encrypted genome. |
-| **EF** | $15,000 | `ProtocolRegistry.sol` pre-registers clinical trial protocols on-chain before CT.gov. Detects outcome switching cryptographically. |
-| **Anonymous RPC** | TBD | All patient transactions routed via WorldChain Anon RPC (`wagmi.ts`). IP stripped before hitting node — breaks IP→wallet→genome linkage. GDPR Art. 9 compliance at transport layer. |
-| **ENS** | $10,000 | `DatasetRegistry.sol` registers each dataset as `slug.genomechain.eth` ENS subname. Human-readable identity for medical datasets. |
-| **Definitive** | $5,000 | Dataset tokens (ERC-20 per dataset) tradeable on Definitive DEX. On-chain access control via `purchaseAccess()`. |
+| Track | Integration |
+|-------|-------------|
+| **World — IDKit + Mini App** | World ID Orb gating genome submission (`nullifier_hash` = one-genome-per-human). MiniKit walletAuth + verify replace RainbowKit/IDKit — runs natively inside World App. Agent Pass gates AI health insights. |
+| **Arkiv** | Medical record metadata stored as patient-owned Arkiv entities. Consent-gated by on-chain ConsentManager. 10-year GDPR expiry. Cross-institution queryable without centralized broker. 5/5 prize files in `docs/arkiv/`. |
+| **Ethereum Foundation** | `ProtocolRegistry.sol` pre-registers clinical trial protocols on-chain before CT.gov. Detects outcome switching cryptographically. All contracts EVM-standard on WorldChain (OP Stack L2). |
+| **Anon RPC** | Every patient transaction broadcast through WorldChain Anon RPC (`wagmi.ts`). IP stripped before hitting node — breaks IP→wallet→medical record linkage. GDPR Art. 9 at transport layer. |
 
 ---
 
@@ -41,9 +37,7 @@ Patient → encrypt(AES-256) → Lighthouse/IPFS → CID on WorldChain
                                                       │
                                          Institution queries (with consent)
                                                       │
-                                         0G Private Computer (TEE)
-                                                      │
-                                              Aggregate outputs only
+                                         Only consented data types shared
 ```
 
 Contracts (all on WorldChain): `GenomeRegistry`, `RecordVault`, `ConsentManager`, `HealthToken`, `LabRegistry`, `LabAttestation`, `ProtocolRegistry`.
@@ -96,7 +90,6 @@ Network: WorldChain Sepolia (chain ID 4801) for testnet, WorldChain mainnet (cha
 | File storage | Lighthouse SDK (IPFS + Filecoin), AES-256 client-side encryption |
 | Metadata DB | Arkiv — `medical_record_v1` entities, patient-owned |
 | Privacy RPC | WorldChain Anon RPC |
-| Confidential compute | 0G Private Computer (TEE) |
 | Frontend | Next.js, Wagmi, Viem |
 | Token | ERC-20 GNM with MINTER_ROLE |
 
