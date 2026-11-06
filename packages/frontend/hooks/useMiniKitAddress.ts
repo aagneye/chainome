@@ -1,18 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { isAddress } from "viem";
 
-// Reads the wallet address stored by MiniKit walletAuth
-// Falls back gracefully when not inside World App
-export function useMiniKitAddress(): `0x${string}` | undefined {
-  const [address, setAddress] = useState<`0x${string}` | undefined>();
-
-  useEffect(() => {
+function readAddress(): `0x${string}` | undefined {
+  if (typeof window === "undefined") return undefined;
+  try {
     const stored = sessionStorage.getItem("minikit_address");
-    // Typed as an address so wagmi/viem calls accept it; anything else stored there is ignored.
-    if (stored && isAddress(stored)) setAddress(stored);
-  }, []);
+    if (stored && isAddress(stored)) return stored as `0x${string}`;
+  } catch {}
+  return undefined;
+}
 
+export function useMiniKitAddress(): `0x${string}` | undefined {
+  // Lazy initializer runs synchronously on first render — no useEffect race with router guards.
+  const [address] = useState<`0x${string}` | undefined>(readAddress);
   return address;
 }
