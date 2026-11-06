@@ -67,17 +67,17 @@ pnpm dev
 
 ## Contract Addresses
 
-| Contract | Address |
-|----------|---------|
-| GenomeRegistry | TBD after deployment |
-| RecordVault | TBD after deployment |
-| ConsentManager | TBD after deployment |
-| HealthToken | TBD after deployment |
-| LabRegistry | TBD after deployment |
-| LabAttestation | TBD after deployment |
-| ProtocolRegistry | TBD after deployment |
+| Contract | Address (WorldChain Sepolia) |
+|----------|------------------------------|
+| HealthToken (GNM) | `0x62cD9Ce37C52C43eB8DA2C4CCcb263ae07f34E48` |
+| LabRegistry | `0x95FdD2510830F0A481d568E26E60AC2C302742ff` |
+| LabAttestation | `0xE6583D2ABa77909692e6d2466BD8D980D19d5a9c` |
+| GenomeRegistry | `0x6f5b65B4709f0020AAa75eeB5e3D279C773eDF91` |
+| RecordVault | `0x2Ee90d11C216E024209892cFf158C1A362e82598` |
+| ConsentManager | `0xa1D0A76Abf4399e55F47205783E5e5F3b1ceC671` |
+| ProtocolRegistry | `0x5EE1F97560379D16215Da1D79DBD0877dd2b6Fa0` |
 
-Network: WorldChain Sepolia (chain ID 4801) for testnet, WorldChain mainnet (chain ID 480) for production.
+Network: WorldChain Sepolia (chain ID 4801) · Explorer: https://worldchain-sepolia.explorer.alchemy.com
 
 ---
 
