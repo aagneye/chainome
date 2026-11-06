@@ -8,6 +8,7 @@
   },
   "scripts": {
     "start": "tsx src/cli.ts",
+    "serve": "tsx src/server.ts",
     "query": "tsx src/query.ts",
     "typecheck": "tsc -p tsconfig.json",
     "verify": "tsx src/verify.ts",
