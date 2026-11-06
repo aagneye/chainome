@@ -428,8 +428,8 @@ sup.cite:hover { background: rgba(148,163,184,.25); }
           <p><code>LabRegistry</code> whitelists approved sequencing labs. <code>LabAttestation</code> records lab signatures: <code>attest(patient, genomeCID, labId, sig)</code>. <code>GenomeRegistry</code> requires a valid lab attestation before accepting any genome — prevents fabricated data from corrupting research cohorts.</p>
         </div>
         <div class="detail-card">
-          <h4 style="color:var(--chain)">WorldChain Anon RPC</h4>
-          <p>All patient transactions broadcast via WorldChain's anonymous RPC. Strips IP address from tx submission — no IP→wallet→medical data linkage. A patient uploading their genome cannot be identified by network-level surveillance regardless of jurisdiction.</p>
+          <h4 style="color:var(--chain)">EF Anon-RPC</h4>
+          <p>Every chain read goes through EF Anon-RPC over the Nox mixnet, with no direct-RPC fallback. The RPC provider sees a mixnet exit, never the patient's IP — no IP→wallet→medical data linkage. Transactions are sent by World App.</p>
         </div>
       </div>
 

@@ -37,7 +37,7 @@ Tests and the frontend build were **not run** in this audit (no `node_modules`, 
 
 **P1 — required for sponsor prizes**
 5. Arkiv: real SDK write signed by patient wallet, public/encrypted field split, honest `friction.md`.
-6. Anon RPC: all patient transactions sent through WorldChain Anon RPC (wagmi transport), shown in the demo.
+6. EF Anon-RPC: all chain reads through `@anon-rpc/browser-harness` (Nox mixnet) by default, shown in the demo. Built in `feat/anon-rpc`.
 7. World: Agent Pass proof verified in `/api/health-insights`; staging app_id + actions.
 8. Lab attestation signed by a real lab key.
 9. Ethereum Foundation: write-up of why this needs Ethereum (public verifiability, consent audit trail).
