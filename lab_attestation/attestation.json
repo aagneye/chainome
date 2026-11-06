@@ -1,0 +1,18 @@
+{
+  "version": "1",
+  "schema": "chainome/lab-attestation/v1",
+  "file": {
+    "name": "test_genome.vcf",
+    "sha256": "0x521b0cd0ccaa57dab4a334abb250382d2cc8c7f411eee986a2eb79736a1e5a05",
+    "bytes": 2104,
+    "format": "VCF/4.2",
+    "reference": "GRCh38"
+  },
+  "patient": "0x0000000000000000000000000000000000000000",
+  "labSigner": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  "timestamp": 1762486200,
+  "isoDttm": "2025-11-07T03:30:00.000Z",
+  "messageHash": "0x9ec48fa68060bd553780c7d8a80d62495747e9cffd5e668d21c8429e1fd3e5af",
+  "signature": "0x16a55576787f7a9eb266a0249b3ed07298edfbe7440f34b16cd93be52409e14a6d9c0e205f9c8069b0bfccf936728170e0f4983dc857dee57143e121032168b91c",
+  "verifyCmd": "npx ts-node verify.ts attestation.json ../test_genome.vcf"
+}

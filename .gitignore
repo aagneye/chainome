@@ -21,6 +21,8 @@ id_*
 *.vcf
 *.vcf.gz
 *.vcf.bgz
+# Allow the synthetic test genome committed for demo purposes
+!lab_attestation/test_genome.vcf
 *.tbi
 *.csi
 *.bam
