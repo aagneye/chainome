@@ -10,7 +10,7 @@ RUN apt-get update \
 RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
 
 WORKDIR /app
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc ./
 COPY packages/shared/package.json packages/shared/
 COPY packages/pipeline/package.json packages/pipeline/
 RUN pnpm install --frozen-lockfile --filter pipeline...

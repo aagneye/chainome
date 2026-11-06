@@ -128,13 +128,69 @@ All seven panel REF bases matched GRCh38 at run time.
 - **`CONTRACTS.<name>.address` / `.abi` on plain address strings** (consent, insights, records): these crashed at runtime. Call sites now use the address plus the matching ABI constant. `insights` called `getRecordCount`, which isn't in the frontend ABI; it now uses `recordCount`.
 - **Removed:** the Lighthouse plaintext upload, `NEXT_PUBLIC_LIGHTHOUSE_API_KEY`, and the fake `/api/arkiv-record` route.
 
-## 8. Status and what's left
+## 8. Tests
+
+Vitest in each package; run them all with `pnpm -r test`, or a single package with `pnpm --filter <pkg> test`.
+
+| Package | Tests | Covers |
+|---|---|---|
+| `shared` | 33 | key derivation pinned to a known value (a silent change would orphan every patient's data); wrap/unwrap round trip; wrong key, tampered ciphertext and swapped ephemeral key all rejected; sealed payloads; schema names and the 31-attribute limit; health features never indexed; chromosome ordering |
+| `pipeline` (unit) | 79 | CPIC-style rules for CYP2C19, CYP2C9, SLCO1B1 and TCF7L2; `callFeatures` with REF-mismatch and gVCF handling; streaming AES-GCM (sizes, hashes, fresh nonces, tamper and wrong-key failure, no plaintext leak); shell quoting, `pipefail`, pool concurrency, retry; config validation; 23andMe, gzip, non-VCF and >2 GB detection; Swarm (preflight, no Swarm encryption, retries); Arkiv writes (batches of 10, `key()` links, expiry, sealed features); attestation (skip, score, `isValid` check) |
+| `pipeline` (integration) | 6 | synthetic genome through real bcftools: build detection, `1`→`chr1`, multi-allelic split, indel left-alignment, LowQual dropped, INFO removed, `JOHN_DOE` / `##commandline` removed, QC counts, per-chromosome split, encrypt → decrypt → `bcftools view` |
+| `frontend` | 48 | MiniKit send → userop poll → tx hash (pending, transient errors, failure, timeout), calldata/chain, refuses outside World App, `signMessage`; `/api/userop` validation and proxying; browser round trip; **cross-package**: WebCrypto decrypts exactly what the Node pipeline wrote; wrong key, tampering and non-GenomeChain payloads rejected; `/api/swarm` ref validation and proxying; `/api/genome` validation and errors; `/api/records` refuses plaintext, validates input, enforces 25 MB and writes the right Swarm and Arkiv payloads; `getGenomeForPatient` mapping |
+
+The integration tests need bcftools, so they're skipped on machines without it. Run them in the lab image:
+
+```bash
+docker run --rm --entrypoint /app/packages/pipeline/node_modules/.bin/vitest genomechain-pipeline run
+```
+
+Last run on the lab VM: 85/85 pipeline tests passed, including integration.
+
+**What the tests caught:**
+- The het/hom QC check was applied to small VCFs, so a valid 5-variant file failed QC. It's now only judged above 10,000 variants, like Ti/Tv.
+- Two test-data mistakes (Arkiv keys must be 32-byte hex) and a module-cache isolation issue.
+
+**Not covered here:**
+- The pre-existing Hardhat contract tests: 28 pass, 37 fail. All 37 failures share one cause: `@nomicfoundation/hardhat-chai-matchers` isn't registered on the `chai` instance the tests import (`Invalid Chai property: emit / revertedWithCustomError`, bigint vs number). This predates this work, and the contracts are unchanged.
+- Live Swarm and Arkiv networks (the SDKs are mocked in unit tests).
+
+## 9. Uploading from the app (lab node on Azure)
+
+Patients upload from World App on `/genome`:
+
+1. `POST /api/genome/jobs` (Vercel) asks the lab node for a job.
+2. The browser **PUTs the VCF straight to the lab node** with a one-time, job-bound upload URL (HMAC token, 1 h). A 1–2 GB file can't pass through Vercel, which caps request bodies at ~4.5 MB.
+3. `/genome` polls `GET /api/genome/jobs/<id>` and shows the pipeline step live. When the job is done it reloads the genome from Arkiv.
+
+The job service is [`packages/pipeline/src/server.ts`](../packages/pipeline/src/server.ts). It runs one job at a time and deletes the plaintext input and work directory when a job ends. Deployment (Caddy TLS, job service, optional Bee node) and the keys/actions checklist are in [`deploy/azure/README.md`](../deploy/azure/README.md).
+
+**Verified on the Azure VM (test mode):** HG002 uploaded with its job token (156 MB); 4,096,123 variants, 22 encrypted segments in ~65 s; afterwards 0 plaintext inputs and 0 work dirs were left. A request without the service token got 401; a forged upload token got 403.
+
+## 10. World App (MiniKit) notes
+
+wagmi on `dev` has no connectors, so every wallet action goes through MiniKit:
+
+- **Writes:** `lib/minikit-tx.ts` → `MiniKit.sendTransaction({ chainId, transactions: [{ to, data }] })`. MiniKit v2 resolves with a **user-operation hash**, so `waitForUserOp` polls `/api/userop/<hash>` (a proxy of `developer.world.org/api/v2/minikit/userop/<hash>`) until it has a transaction hash. Pages use `useMiniKitTx()`; `isSubmitted` = accepted by World App, `isSuccess` = confirmed on chain.
+- **Patient key:** `MiniKit.signMessage(KEY_DERIVATION_MESSAGE)` → HKDF → X25519.
+- **World ID signal:** `/verify` binds the proof to the MiniKit address, the same address `submitGenome` is called with (the contract checks `signal`).
+- **Proof encoding:** `submitGenome` now decodes IDKit's proof with `decodeAbiParameters("uint256[8]")`. The old `proof.split(",")` produced a 1-element array, so the call could never succeed.
+
+**Check on a real device before the demo:**
+1. **Allowlist the contracts** in the Developer Portal (Mini App → Permissions → Contract Entrypoints): `GenomeRegistry`, `RecordVault`, `ConsentManager`, `StudyRegistry`. Otherwise World App rejects with `invalid_contract`.
+2. **World Chain Sepolia (4801):** the MiniKit docs only show mainnet (480) in their examples. Confirm `sendTransaction` works on 4801, or set `NEXT_PUBLIC_CHAIN_ID`.
+3. **Signature determinism:** World App wallets are smart accounts. Sign `KEY_DERIVATION_MESSAGE` twice and check that `/genome` shows the same public key both times. If it differs, the derived key isn't stable. `GenomePanel` detects this ("different key than the one your lab encrypted to") rather than failing per segment.
+
+## 11. Status and what's left
 
 | Item | Status |
 |---|---|
 | Normalize → QC → PGx → split → encrypt on real WGS data | ✅ verified on the VM |
 | Decrypt round trip + hash checks | ✅ verified on the VM (CLI) |
 | Frontend typecheck + `next build` | ✅ |
+| Unit + integration tests (shared 33, pipeline 99, frontend 54) | ✅ all passing |
+| App upload → Azure lab node → pipeline | ✅ live over HTTPS (Let's Encrypt, ports 80/443 open, DNS label set) in test mode; 156 MB upload processed in 69 s end to end; ⏳ live Swarm/Arkiv writes need the Arkiv access key, funded wallets and a Swarm batch |
+| Wallet actions via MiniKit (`/genome`, `/records`, `/consent` writes; patient key via `MiniKit.signMessage`; `/verify` + `/insights` address) | ✅ typechecked + unit-tested, ⏳ not yet run in World App |
 | Swarm upload / Arkiv write against live networks | ⏳ needs a postage batch + Bee URL, and a funded Rabdi key + access key |
 | `arkiv/*.md` and README "proof" values (entity keys, batch ID, writer wallet) | ⏳ filled in after the first live run |
 | `/genome` panel against live Arkiv data | ⏳ after the live run |

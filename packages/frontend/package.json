@@ -5,10 +5,12 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
-    "@anon-rpc/browser-harness": "^0.4.0",
+    "@anon-rpc/browser-harness": "0.4.0",
     "@arkiv-network/sdk": "^1.0.1",
     "@chainome/shared": "workspace:^",
     "@ethersphere/bee-js": "^13.2.0",
@@ -30,6 +32,7 @@
     "autoprefixer": "^10.4.0",
     "postcss": "^8.4.0",
     "tailwindcss": "^3.4.0",
-    "typescript": "^5.4.0"
+    "typescript": "^5.4.0",
+    "vitest": "^5.1.0"
   }
 }

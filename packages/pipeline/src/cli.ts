@@ -34,6 +34,7 @@ const { values: args } = parseArgs({
     build: { type: "string" },
     work: { type: "string", default: "./work" },
     "dry-run": { type: "boolean", default: false },
+    result: { type: "string" }, // also write the run result JSON here (used by the job service)
   },
 });
 
@@ -117,6 +118,10 @@ async function main() {
       sha256Plain: enc.sha256Plain, sha256Cipher: enc.sha256Cipher, swarmRef: "dry-run", wrappedKey,
     }));
     await writeFile(join(dir, "manifest.json"), JSON.stringify(manifest, null, 2));
+    if (args.result) {
+      const summary = { runId, dryRun: true, qc: manifest.qc, segments: manifest.segments.map((s) => ({ chrom: s.chrom, variants: s.variantCount, cipherBytes: s.cipherBytes })) };
+      await writeFile(args.result, JSON.stringify(summary, null, 2));
+    }
     log("done", `dry run — manifest at ${join(dir, "manifest.json")}`);
     return;
   }
@@ -152,6 +157,7 @@ async function main() {
 
   const result = { runId, manifestRef, ...ark, attestTx, segments: readBack };
   await writeFile(join(dir, "result.json"), JSON.stringify(result, null, 2));
+  if (args.result) await writeFile(args.result, JSON.stringify({ ...result, dryRun: false, qc: manifest.qc }, null, 2));
 
   console.log("\n── done ─────────────────────────────────────────────");
   console.log(`manifestRef  ${manifestRef}   ← submit this in GenomeRegistry.submitGenome`);

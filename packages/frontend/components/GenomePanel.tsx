@@ -37,8 +37,13 @@ export function GenomePanel({
     fetchManifest(dataset.manifestRef).then(setManifest).catch((e) => setError(e.message));
   }, [dataset.manifestRef]);
 
+  // The lab encrypted to the key the patient gave it. If today's signature derives a different
+  // key (e.g. a wallet that doesn't sign deterministically), say so instead of failing per segment.
+  const keyMismatch =
+    !!manifest && !!patientKey.publicKey && manifest.patientPublicKey.toLowerCase() !== patientKey.publicKey.toLowerCase();
+
   async function verify(chrom: string) {
-    if (!manifest || !patientKey.key) return;
+    if (!manifest || !patientKey.key || keyMismatch) return;
     setBusy(chrom);
     setError(null);
     try {
@@ -104,6 +109,13 @@ export function GenomePanel({
         </button>
       )}
 
+      {keyMismatch && (
+        <p className="text-xs text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
+          This wallet&apos;s signature produced a different key than the one your lab encrypted to, so these segments can&apos;t be
+          opened with it. Make sure you&apos;re signed in with the same World App account you used when you gave the lab your key.
+        </p>
+      )}
+
       <div className="max-h-80 overflow-y-auto rounded-xl border border-genome-border">
         <table className="w-full text-xs">
           <thead className="bg-genome-navy text-gray-500 sticky top-0">
@@ -132,7 +144,7 @@ export function GenomePanel({
                     ) : (
                       <button
                         onClick={() => verify(s.chrom)}
-                        disabled={!patientKey.key || !manifest || busy !== null}
+                        disabled={!patientKey.key || !manifest || keyMismatch || busy !== null}
                         className="text-gray-300 hover:text-genome-teal disabled:opacity-30"
                       >
                         {busy === s.chrom ? "decrypting…" : "download & verify"}

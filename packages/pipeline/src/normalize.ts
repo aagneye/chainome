@@ -190,7 +190,8 @@ export async function qc(vcf: string): Promise<QcResult> {
   const notes: string[] = [];
   if (!hasRefCalls) notes.push("variant-only VCF: positions not listed are assumed reference, not confirmed");
   if (snps > 10_000 && (titv < 1.8 || titv > 3.3)) notes.push(`Ti/Tv ${titv.toFixed(2)} outside 1.8–3.3 (WGS ≈ 2.0–2.1, WES ≈ 2.8–3.0)`);
-  if (hetHom > 0 && (hetHom < 1.0 || hetHom > 2.5)) notes.push(`het/hom ${hetHom.toFixed(2)} outside 1.0–2.5`);
+  // Both ratios are only meaningful genome-wide; a small panel VCF would fail them by chance.
+  if (variantCount > 10_000 && hetHom > 0 && (hetHom < 1.0 || hetHom > 2.5)) notes.push(`het/hom ${hetHom.toFixed(2)} outside 1.0–2.5`);
   const pass = variantCount > 0 && notes.every((n) => n.startsWith("variant-only"));
 
   return { variantCount, snps, indels, titv, hetHom, hasRefCalls, pass, notes };

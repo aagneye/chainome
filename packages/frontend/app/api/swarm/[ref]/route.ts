@@ -12,7 +12,11 @@ export async function GET(_req: NextRequest, { params }: { params: { ref: string
   if (!/^[0-9a-f]{64}$/i.test(ref)) {
     return NextResponse.json({ error: "invalid Swarm reference" }, { status: 400 });
   }
-  const upstream = await fetch(`${SWARM}/bytes/${ref}`, { cache: "no-store" });
+  const token = process.env.BEE_PROXY_TOKEN; // set when SWARM_GATEWAY is the lab node's /bee proxy
+  const upstream = await fetch(`${SWARM}/bytes/${ref}`, {
+    cache: "no-store",
+    headers: token ? { authorization: `Bearer ${token}` } : undefined,
+  });
   if (!upstream.ok || !upstream.body) {
     return NextResponse.json({ error: `Swarm returned ${upstream.status}` }, { status: 502 });
   }

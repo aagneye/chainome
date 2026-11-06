@@ -1,11 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract } from "wagmi";
+import { useReadContract } from "wagmi";
+import { encodeFunctionData, isAddress } from "viem";
+import { useMiniKitAddress } from "@/hooks/useMiniKitAddress";
+import { useMiniKitTx } from "@/hooks/useMiniKitTx";
 import { CONTRACTS, CONSENT_MANAGER_ABI } from "@/lib/contracts";
 
 export default function ConsentPage() {
-  const { address } = useAccount();
+  const address = useMiniKitAddress(); // from MiniKit walletAuth
   const [institution, setInstitution] = useState("");
   const [expireDays, setExpireDays] = useState(365);
   const [checkAddr, setCheckAddr] = useState("");
@@ -13,10 +16,14 @@ export default function ConsentPage() {
   const [mode, setMode] = useState<"grant" | "revoke" | "check">("grant");
   const [showRevokeConfirm, setShowRevokeConfirm] = useState(false);
 
-  const { writeContract: grant, data: grantHash, isPending: granting } = useWriteContract();
-  const { writeContract: revoke, data: revokeHash, isPending: revoking } = useWriteContract();
-  const { isSuccess: grantOk } = useWaitForTransactionReceipt({ hash: grantHash });
-  const { isSuccess: revokeOk } = useWaitForTransactionReceipt({ hash: revokeHash });
+  // Writes go through World App (wagmi has no connectors); the hasConsent read stays on wagmi/Anon-RPC.
+  const grantTx = useMiniKitTx();
+  const revokeTx = useMiniKitTx();
+  const granting = grantTx.isPending;
+  const revoking = revokeTx.isPending;
+  const grantOk = grantTx.isSubmitted;
+  const revokeOk = revokeTx.isSubmitted;
+  const txError = grantTx.error ?? revokeTx.error;
 
   const { refetch: checkConsent } = useReadContract({
     address: CONTRACTS.consentManager,
@@ -27,25 +34,27 @@ export default function ConsentPage() {
   });
 
   async function handleGrant() {
-    if (!institution) return;
+    if (!isAddress(institution)) return;
     const expiry = BigInt(Math.floor(Date.now() / 1000) + expireDays * 86400);
-    grant({
-      address: CONTRACTS.consentManager,
-      abi: CONSENT_MANAGER_ABI,
-      functionName: "grantConsent",
-      args: [institution as `0x${string}`, expiry, "0x" + "0".repeat(64) as `0x${string}`],
-    });
+    revokeTx.reset();
+    await grantTx.send(
+      CONTRACTS.consentManager,
+      encodeFunctionData({
+        abi: CONSENT_MANAGER_ABI,
+        functionName: "grantConsent",
+        args: [institution, expiry, `0x${"0".repeat(64)}`],
+      }),
+    );
   }
 
   async function handleRevoke() {
-    if (!institution) return;
-    revoke({
-      address: CONTRACTS.consentManager,
-      abi: CONSENT_MANAGER_ABI,
-      functionName: "revokeConsent",
-      args: [institution as `0x${string}`],
-    });
+    if (!isAddress(institution)) return;
     setShowRevokeConfirm(false);
+    grantTx.reset();
+    await revokeTx.send(
+      CONTRACTS.consentManager,
+      encodeFunctionData({ abi: CONSENT_MANAGER_ABI, functionName: "revokeConsent", args: [institution] }),
+    );
   }
 
   async function handleCheck() {
@@ -154,6 +163,10 @@ export default function ConsentPage() {
                 </button>
               </div>
             </div>
+          )}
+
+          {txError && (
+            <div className="animate-fade-in px-4 py-3 rounded-lg bg-red-900/30 border border-red-800 text-red-400 text-sm">{txError}</div>
           )}
 
           {/* Success cards */}

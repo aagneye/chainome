@@ -6,6 +6,9 @@ import { MiniKit } from "@worldcoin/minikit-js";
 import { encodeFunctionData } from "viem";
 import { CONTRACTS, STUDY_REGISTRY_ABI } from "@/lib/contracts";
 
+// Contracts are deployed on World Chain Sepolia (4801) unless configured otherwise.
+const CHAIN_ID = Number(process.env.NEXT_PUBLIC_CHAIN_ID ?? 4801);
+
 const MOCK_STUDIES = [
   {
     id: 1,
@@ -97,20 +100,18 @@ export default function StudiesPage() {
     const types = selectedTypes[studyId] ?? [];
     setLoading(true);
     try {
-      const result = await MiniKit.sendTransaction({
+      // MiniKit v2: pre-encoded calldata + explicit chain; throws SendTransactionError on failure.
+      await MiniKit.sendTransaction({
+        chainId: CHAIN_ID,
         transactions: [{
-          to: CONTRACTS.studyRegistry as `0x${string}`,
+          to: CONTRACTS.studyRegistry,
           data: encodeFunctionData({
             abi: STUDY_REGISTRY_ABI,
             functionName: "joinStudy",
             args: [BigInt(studyId), types],
           }),
-          value: "0x0",
         }],
-        chainId: 4801,
       });
-      const finalPayload = result.data as { status?: string; error_code?: string } | null;
-      if (!finalPayload || finalPayload.status === "error") throw new Error(finalPayload?.error_code ?? "tx failed");
       setJoinedIds((prev) => [...prev, studyId]);
       setJoiningId(null);
     } catch (err) {

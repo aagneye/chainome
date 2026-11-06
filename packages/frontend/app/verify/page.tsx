@@ -1,7 +1,7 @@
 "use client";
 
 import { IDKitWidget, VerificationLevel, type ISuccessResult } from "@worldcoin/idkit";
-import { useAccount } from "wagmi";
+import { useMiniKitAddress } from "@/hooks/useMiniKitAddress";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -11,7 +11,8 @@ const ACTION  = process.env.NEXT_PUBLIC_WLD_ACTION  ?? "genome_submission";
 type Status = "idle" | "verifying" | "success" | "denied";
 
 export default function VerifyPage() {
-  const { address } = useAccount();
+  // The World ID signal must be the address GenomeRegistry.submitGenome is called with.
+  const address = useMiniKitAddress();
   const router = useRouter();
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);

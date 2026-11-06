@@ -31,7 +31,7 @@ const PANEL: PanelSite[] = [
   { rsid: "rs7903146", gene: "TCF7L2", chrom: "chr10", pos: 112998590, ref: "C", alt: "T", meaning: "TCF7L2 type 2 diabetes risk allele" },
 ];
 
-function altCount(gt: string): number | undefined {
+export function altCount(gt: string): number | undefined {
   const alleles = gt.split(/[/|]/);
   if (alleles.some((a) => a === "." || a === "")) return undefined;
   return alleles.filter((a) => a !== "0").length;
@@ -78,7 +78,7 @@ export async function callFeatures(vcf: string, hasRefCalls: boolean): Promise<F
 }
 
 // CPIC-style phenotype rules, simplified to the alleles in the panel.
-function cyp2c19(star2?: number, star3?: number, star17?: number): PgxPhenotype {
+export function cyp2c19(star2?: number, star3?: number, star17?: number): PgxPhenotype {
   if (star2 === undefined || star3 === undefined || star17 === undefined) return "unknown";
   const lof = star2 + star3;
   if (lof >= 2) return "poor";
@@ -88,7 +88,7 @@ function cyp2c19(star2?: number, star3?: number, star17?: number): PgxPhenotype 
   return "normal";
 }
 
-function cyp2c9(star2?: number, star3?: number): PgxPhenotype {
+export function cyp2c9(star2?: number, star3?: number): PgxPhenotype {
   if (star2 === undefined || star3 === undefined) return "unknown";
   const score = 2 - star2 * 0.5 - star3 * 1; // activity score: *1 = 1, *2 = 0.5, *3 = 0
   if (score >= 2) return "normal";
@@ -96,12 +96,12 @@ function cyp2c9(star2?: number, star3?: number): PgxPhenotype {
   return "poor";
 }
 
-function slco1b1(c?: number): PgxPhenotype {
+export function slco1b1(c?: number): PgxPhenotype {
   if (c === undefined) return "unknown";
   return c === 0 ? "normal" : c === 1 ? "decreased" : "poor";
 }
 
-function t2d(c?: number): RiskBand {
+export function t2d(c?: number): RiskBand {
   if (c === undefined) return "unknown";
   return c === 0 ? "average" : "elevated";
 }

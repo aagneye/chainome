@@ -1,13 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import { decodeAbiParameters, encodeFunctionData, parseAbiParameters } from "viem";
 import { useRouter } from "next/navigation";
 import type { ISuccessResult } from "@worldcoin/idkit";
 import { CONTRACTS, GENOME_REGISTRY_ABI } from "@/lib/contracts";
 import type { GenomeView } from "@/lib/arkiv-server";
 import { usePatientKey } from "@/lib/use-patient-key";
+import { useMiniKitTx } from "@/hooks/useMiniKitTx";
 import { GenomePanel } from "@/components/GenomePanel";
+import { GenomeUpload } from "@/components/GenomeUpload";
 
 /**
  * Genome flow (whole-genome VCF up to 2 GB never passes through the browser):
@@ -18,9 +20,9 @@ import { GenomePanel } from "@/components/GenomePanel";
  *     manifest on World Chain with their World ID proof (one genome per human).
  */
 export default function GenomePage() {
-  const { address } = useAccount();
   const router = useRouter();
   const patientKey = usePatientKey();
+  const address = patientKey.address; // from MiniKit walletAuth
 
   const [genome, setGenome] = useState<GenomeView | null>(null);
   const [loading, setLoading] = useState(false);
@@ -28,8 +30,7 @@ export default function GenomePage() {
   const [copied, setCopied] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const { writeContract, data: txHash, isPending } = useWriteContract();
-  const { isSuccess } = useWaitForTransactionReceipt({ hash: txHash });
+  const tx = useMiniKitTx();
 
   const load = useCallback(async () => {
     if (!address) return;
@@ -57,7 +58,7 @@ export default function GenomePage() {
     setTimeout(() => setCopied(null), 2000);
   }
 
-  function anchor() {
+  async function anchor() {
     if (!genome || !address) return;
     setError(null);
     const proofRaw = sessionStorage.getItem("wld_proof");
@@ -66,20 +67,21 @@ export default function GenomePage() {
       return;
     }
     const proof: ISuccessResult = JSON.parse(proofRaw);
-    writeContract(
-      {
-        address: CONTRACTS.genomeRegistry,
+    // IDKit returns the Groth16 proof as one ABI-encoded hex string of uint256[8].
+    const [proofWords] = decodeAbiParameters(parseAbiParameters("uint256[8]"), proof.proof as `0x${string}`);
+    await tx.send(
+      CONTRACTS.genomeRegistry,
+      encodeFunctionData({
         abi: GENOME_REGISTRY_ABI,
         functionName: "submitGenome",
         args: [
           address,
           BigInt(proof.merkle_root),
           BigInt(proof.nullifier_hash),
-          proof.proof.split(",").map(BigInt) as unknown as readonly [bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint],
+          proofWords,
           genome.dataset.manifestRef, // the exact string the lab attested
         ],
-      },
-      { onError: (e) => setError(e.message.split("\n")[0]) },
+      }),
     );
   }
 
@@ -87,7 +89,7 @@ export default function GenomePage() {
     ? `scripts/run.sh --vcf /gc/in/<patient>.vcf.gz --patient ${address} --patient-pubkey ${patientKey.publicKey} --nullifier <nullifier_hash>`
     : "";
 
-  if (isSuccess && genome) {
+  if (tx.isSubmitted && genome) {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center gap-6 px-4 text-center">
         <div className="relative w-20 h-20 rounded-full bg-genome-card border-2 border-genome-teal flex items-center justify-center">
@@ -104,6 +106,9 @@ export default function GenomePage() {
         <div className="w-full max-w-md bg-genome-card border border-genome-border rounded-xl p-4 text-left">
           <p className="text-xs text-gray-500 mb-2">Swarm manifest anchored on World Chain</p>
           <code className="text-xs text-genome-teal break-all">{genome.dataset.manifestRef}</code>
+          <p className="text-xs text-gray-500 mt-3">
+            {tx.txHash ? <>Transaction <code className="text-gray-300 break-all">{tx.txHash}</code></> : "Submitted — waiting for World Chain to confirm."}
+          </p>
         </div>
         <button
           onClick={() => router.push("/dashboard")}
@@ -131,7 +136,7 @@ export default function GenomePage() {
         <section className="w-full max-w-3xl bg-genome-card border border-genome-border rounded-2xl p-6 space-y-4">
           <div className="flex items-center gap-3">
             <Step n={1} done={!!patientKey.publicKey} />
-            <h3 className="text-white font-semibold">Give your lab your encryption key</h3>
+            <h3 className="text-white font-semibold">{patientKey.publicKey ? "Upload your genome" : "Create your encryption key"}</h3>
           </div>
           {!patientKey.publicKey ? (
             <button
@@ -143,10 +148,16 @@ export default function GenomePage() {
             </button>
           ) : (
             <div className="space-y-3">
-              <KeyRow label="Public key" value={patientKey.publicKey} copied={copied === "pk"} onCopy={() => copy("pk", patientKey.publicKey!)} />
-              <KeyRow label="Lab command" value={labCommand} copied={copied === "cmd"} onCopy={() => copy("cmd", labCommand)} />
+              <GenomeUpload patient={address} patientPublicKey={patientKey.publicKey} onDone={load} />
+              <details className="text-xs text-gray-500">
+                <summary className="cursor-pointer hover:text-gray-300">Your lab already has the file? Give them your key instead</summary>
+                <div className="mt-3 space-y-3">
+                  <KeyRow label="Public key" value={patientKey.publicKey} copied={copied === "pk"} onCopy={() => copy("pk", patientKey.publicKey!)} />
+                  <KeyRow label="Lab command" value={labCommand} copied={copied === "cmd"} onCopy={() => copy("cmd", labCommand)} />
+                </div>
+              </details>
               <p className="text-xs text-gray-500">
-                Only the public half leaves this page. The private key is recomputed from your signature whenever you need it and is never stored.
+                Only the public half of your key leaves this page. The private key is recomputed from your signature whenever you need it and is never stored.
               </p>
             </div>
           )}
@@ -177,13 +188,13 @@ export default function GenomePage() {
             <section className="w-full max-w-3xl flex flex-col items-center gap-3">
               <button
                 onClick={anchor}
-                disabled={isPending || !CONTRACTS.genomeRegistry || !genome.dataset.qcPass}
+                disabled={tx.isPending || !CONTRACTS.genomeRegistry || !genome.dataset.qcPass}
                 className="px-8 py-3 rounded-xl bg-genome-teal text-black font-bold text-sm hover:opacity-90 transition disabled:opacity-40"
               >
-                {isPending ? "Confirming on-chain…" : "Anchor on World Chain · Earn 500 GNM"}
+                {tx.isPending ? "Confirming on-chain…" : "Anchor on World Chain · Earn 500 GNM"}
               </button>
               <p className="text-xs text-gray-500">Requires your World ID proof and the lab&apos;s attestation of this manifest.</p>
-              {error && <p className="text-red-400 text-sm">{error}</p>}
+              {(error ?? tx.error) && <p className="text-red-400 text-sm">{error ?? tx.error}</p>}
             </section>
           )}
         </>

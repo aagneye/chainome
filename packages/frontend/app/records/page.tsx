@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import { encodeFunctionData } from "viem";
+import { useMiniKitTx } from "@/hooks/useMiniKitTx";
 import { CONTRACTS, RECORD_VAULT_ABI } from "@/lib/contracts";
 import { encryptForPatient } from "@/lib/genome-crypto";
 import { usePatientKey } from "@/lib/use-patient-key";
@@ -9,8 +10,8 @@ import { usePatientKey } from "@/lib/use-patient-key";
 const RECORD_TYPES = ["Lab Report", "Prescription", "Imaging", "Vaccination", "Clinical Notes", "Other"];
 
 export default function RecordsPage() {
-  const { address } = useAccount();
   const patientKey = usePatientKey();
+  const address = patientKey.address; // from MiniKit walletAuth
   const [file, setFile] = useState<File | null>(null);
   const [recordType, setRecordType] = useState(RECORD_TYPES[0]);
   const [uploading, setUploading] = useState(false);
@@ -18,8 +19,7 @@ export default function RecordsPage() {
   const [cid, setCid] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const { writeContract, data: txHash, isPending } = useWriteContract();
-  const { isSuccess } = useWaitForTransactionReceipt({ hash: txHash });
+  const tx = useMiniKitTx();
 
   const onDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -66,12 +66,10 @@ export default function RecordsPage() {
       setUploadPct(100);
       setCid(body.manifestRef);
 
-      writeContract({
-        address: CONTRACTS.recordVault,
-        abi: RECORD_VAULT_ABI,
-        functionName: "addRecord",
-        args: [body.manifestRef, recordType],
-      });
+      await tx.send(
+        CONTRACTS.recordVault,
+        encodeFunctionData({ abi: RECORD_VAULT_ABI, functionName: "addRecord", args: [body.manifestRef, recordType] }),
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
     } finally {
@@ -79,7 +77,7 @@ export default function RecordsPage() {
     }
   }
 
-  if (isSuccess) {
+  if (tx.isSubmitted) {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center gap-6 px-4">
         <div className="animate-slide-up text-center">
@@ -95,7 +93,7 @@ export default function RecordsPage() {
           <p className="text-xs text-gray-500 mt-1">+10 GNM tokens minted to your wallet</p>
         </div>
         <button
-          onClick={() => { setFile(null); setUploadPct(0); setCid(null); }}
+          onClick={() => { setFile(null); setUploadPct(0); setCid(null); tx.reset(); }}
           className="px-6 py-3 rounded-lg border border-genome-border text-gray-300 hover:border-genome-teal transition"
         >
           Add Another Record
@@ -184,19 +182,19 @@ export default function RecordsPage() {
         )}
 
         {/* Error */}
-        {error && (
+        {(error ?? tx.error) && (
           <div className="animate-fade-in px-4 py-3 rounded-lg bg-red-900/30 border border-red-800 text-red-400 text-sm">
-            {error}
+            {error ?? tx.error}
           </div>
         )}
 
         <button
           onClick={handleSubmit}
-          disabled={!file || uploading || isPending}
+          disabled={!file || uploading || tx.isPending}
           className="w-full px-6 py-3 rounded-lg bg-genome-teal text-black font-semibold
                      hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-40"
         >
-          {uploading ? "Uploading…" : isPending ? "Confirming tx…" : "Store Record"}
+          {uploading ? "Uploading…" : tx.isPending ? "Confirming tx…" : "Store Record"}
         </button>
       </div>
 

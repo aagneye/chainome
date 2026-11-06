@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { useMiniKitAddress } from "@/hooks/useMiniKitAddress";
 import { keccak256, toBytes } from "viem";
 
@@ -35,8 +34,6 @@ export default function PublicationPage() {
   const [published, setPublished] = useState(false);
   const [resultsHash, setResultsHash] = useState<string | null>(null);
 
-  const { writeContract, data: txHash, isPending } = useWriteContract();
-  const { isSuccess } = useWaitForTransactionReceipt({ hash: txHash });
 
   function computeResultsHash() {
     const json = JSON.stringify(MOCK_STUDY, null, 2);
@@ -75,7 +72,7 @@ export default function PublicationPage() {
       {!published && (
         <button
           onClick={handlePublish}
-          disabled={isPending}
+          disabled={published}
           className="w-full px-6 py-3 rounded-lg bg-genome-teal text-black font-semibold hover:opacity-90 transition disabled:opacity-40"
         >
           Publish Results Hash on WorldChain
