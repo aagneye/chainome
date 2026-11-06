@@ -15,6 +15,8 @@ tar --exclude=node_modules --exclude=work --exclude=out -czf - \
   | ssh "$VM_USER@$VM_HOST" "mkdir -p $GC_HOME/src && cd $GC_HOME/src && tar -xzf - && \
       test -f $GC_HOME/pipeline.env || { echo 'missing $GC_HOME/pipeline.env (see deploy/azure/pipeline.env.example)'; exit 1; }; \
       export BEE_PROXY_TOKEN=\$(grep ^BEE_PROXY_TOKEN= $GC_HOME/pipeline.env | cut -d= -f2); \
+      export BEE_RPC=\$(grep ^BEE_RPC= $GC_HOME/pipeline.env | cut -d= -f2-); \
+      export BEE_POSTAGE_START_BLOCK=\$(grep ^BEE_POSTAGE_START_BLOCK= $GC_HOME/pipeline.env | cut -d= -f2); \
       GC_HOME=$GC_HOME LAB_DOMAIN=$LAB_DOMAIN GC_UID=\$(id -u) GC_GID=\$(id -g) \
         docker compose -f deploy/azure/docker-compose.yml $PROFILE up -d --build && \
       docker compose -f deploy/azure/docker-compose.yml ps"

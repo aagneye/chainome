@@ -53,7 +53,13 @@ services:
       BEE_MAINNET: "${BEE_MAINNET:-false}"
       BEE_NETWORK_ID: "${BEE_NETWORK_ID:-10}"
       BEE_BOOTNODE: "${BEE_BOOTNODE:-/dnsaddr/testnet.ethswarm.org}"
-      BEE_BLOCKCHAIN_RPC_ENDPOINT: "${BEE_RPC:-https://ethereum-sepolia-rpc.publicnode.com}"
+      # The RPC must allow large eth_getLogs ranges: Bee syncs postage events in multi-thousand-block pages
+      # and retries failures with no back-off. Alchemy's free tier (10-block cap) makes it loop thousands of
+      # times a minute. Works: https://rpc.sepolia.ethpandaops.io (no key, ~25 min initial sync).
+      BEE_BLOCKCHAIN_RPC_ENDPOINT: "${BEE_RPC:-https://rpc.sepolia.ethpandaops.io}"
+      BEE_BLOCK_TIME: "${BEE_BLOCK_TIME:-12}" # Sepolia block time
+      # Only used when Bee has no built-in postage snapshot for the network (2.8.1 ships one for testnet).
+      BEE_POSTAGE_STAMP_START_BLOCK: "${BEE_POSTAGE_START_BLOCK:-0}"
       BEE_SWAP_ENABLE: "true"
       BEE_FULL_NODE: "false"
       # Bee 2.8.1 deploys its chequebook with a fixed 175k gas limit, but the Sepolia factory needs ~630k,
