@@ -93,6 +93,9 @@ export default function VerifyPage() {
           Orb verification proves you&apos;re a unique human.
           Your iris is never stored — only a zero-knowledge proof.
         </p>
+        <p className="text-xs text-gray-600 mt-2">
+          Orb verification · biometric · prevents duplicate genome submissions
+        </p>
       </div>
 
       <IDKitWidget
@@ -144,6 +147,15 @@ export default function VerifyPage() {
         </a>{" "}
         for testing.
       </p>
+
+      <div className="mt-6 p-3 rounded-lg bg-genome-card border border-genome-border text-xs text-gray-500 text-left max-w-xs">
+        <p className="font-semibold text-gray-400 mb-1">What happens after verification:</p>
+        <ul className="space-y-1 list-disc list-inside">
+          <li>Upload genome file (encrypted, stored on IPFS)</li>
+          <li>Upload medical bills for GNM tokens</li>
+          <li>Browse research studies and earn by participating</li>
+        </ul>
+      </div>
     </main>
   );
 }
