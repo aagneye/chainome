@@ -3,8 +3,12 @@ import { NextRequest } from "next/server";
 
 // ── mocks for the storage SDKs used by /api/records and /api/genome ─────────────
 const beeUpload = vi.fn();
+const beeCtor = vi.fn();
 vi.mock("@ethersphere/bee-js", () => ({
   Bee: class {
+    constructor(...args: unknown[]) {
+      beeCtor(...args);
+    }
     data = { upload: beeUpload };
   },
 }));
@@ -19,7 +23,7 @@ const getGenomeForPatient = vi.fn();
 vi.mock("@/lib/arkiv-server", () => ({ getGenomeForPatient }));
 
 const PATIENT = "0x000000000000000000000000000000000000dEaD";
-const ENV_KEYS = ["BEE_URL", "SWARM_BATCH_ID", "ARKIV_PRIVATE_KEY", "SWARM_GATEWAY"];
+const ENV_KEYS = ["BEE_URL", "SWARM_BATCH_ID", "ARKIV_PRIVATE_KEY", "SWARM_GATEWAY", "BEE_PROXY_TOKEN"];
 const saved = Object.fromEntries(ENV_KEYS.map((k) => [k, process.env[k]]));
 
 beforeEach(() => {
@@ -220,5 +224,97 @@ describe("GET /api/userop/[hash]", () => {
   it("maps upstream errors to 502", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response("down", { status: 500 })));
     expect((await get("0x" + "ab".repeat(32))).status).toBe(502);
+  });
+});
+
+// ── /api/genome/jobs ───────────────────────────────────────────────────────────
+describe("genome processing job routes", () => {
+  const JOB = "123e4567-e89b-12d3-a456-426614174000";
+  const set = (on: boolean) => {
+    if (on) {
+      process.env.PIPELINE_API_URL = "https://lab.example/";
+      process.env.PIPELINE_API_TOKEN = "svc";
+    } else {
+      delete process.env.PIPELINE_API_URL;
+      delete process.env.PIPELINE_API_TOKEN;
+    }
+  };
+  afterEach(() => set(false));
+
+  async function create(body: object) {
+    const { POST } = await import("@/app/api/genome/jobs/route");
+    return POST(new NextRequest("http://x/api/genome/jobs", { method: "POST", body: JSON.stringify(body) }));
+  }
+  async function status(id: string) {
+    const { GET } = await import("@/app/api/genome/jobs/[id]/route");
+    return GET(new NextRequest(`http://x/api/genome/jobs/${id}`), { params: { id } });
+  }
+
+  it("is 503 until the lab node is configured", async () => {
+    set(false);
+    expect((await create({ patient: PATIENT, patientPubKey: "ab".repeat(32) })).status).toBe(503);
+    expect((await status(JOB)).status).toBe(503);
+  });
+
+  it("validates input before calling the lab node", async () => {
+    set(true);
+    vi.stubGlobal("fetch", vi.fn());
+    expect((await create({ patient: "bob", patientPubKey: "ab".repeat(32) })).status).toBe(400);
+    expect((await create({ patient: PATIENT, patientPubKey: "nope" })).status).toBe(400);
+    expect((await status("../../etc")).status).toBe(400);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("creates the job on the lab node with the service token and returns the upload URL", async () => {
+    set(true);
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ jobId: JOB, uploadUrl: "https://lab.example/jobs/x/vcf?token=t" }, { status: 201 })));
+    const res = await create({ patient: PATIENT, patientPubKey: "ab".repeat(32), nullifier: "0x12" });
+    expect(res.status).toBe(201);
+    expect((await res.json()).uploadUrl).toContain("token=");
+    const [url, init] = vi.mocked(fetch).mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("https://lab.example/jobs");
+    expect((init.headers as Record<string, string>).authorization).toBe("Bearer svc");
+    expect(JSON.parse(init.body as string)).toEqual({ patient: PATIENT, patientPubKey: "ab".repeat(32), nullifier: "0x12" });
+  });
+
+  it("proxies job status and maps an unreachable lab node to 502", async () => {
+    set(true);
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ state: "processing", step: "normalize", log: [] })));
+    expect(await (await status(JOB)).json()).toMatchObject({ state: "processing", step: "normalize" });
+    vi.stubGlobal("fetch", vi.fn(async () => { throw new Error("ECONNREFUSED"); }));
+    expect((await status(JOB)).status).toBe(502);
+  });
+});
+
+// ── Bee proxy token (lab node exposes Bee at https://<lab>/bee behind a bearer) ─────
+describe("BEE_PROXY_TOKEN", () => {
+  it("is sent by the Swarm read proxy", async () => {
+    process.env.SWARM_GATEWAY = "https://lab.example/bee";
+    process.env.BEE_PROXY_TOKEN = "beetok";
+    vi.resetModules();
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(new Uint8Array([1]))));
+    const { GET } = await import("@/app/api/swarm/[ref]/route");
+    await GET(new NextRequest("http://x"), { params: { ref: "ab".repeat(32) } });
+    const [url, init] = vi.mocked(fetch).mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(`https://lab.example/bee/bytes/${"ab".repeat(32)}`);
+    expect((init.headers as Record<string, string>).authorization).toBe("Bearer beetok");
+  });
+
+  it("is passed to bee-js by the records route", async () => {
+    process.env.BEE_URL = "https://lab.example/bee";
+    process.env.SWARM_BATCH_ID = "b".repeat(64);
+    process.env.ARKIV_PRIVATE_KEY = "0x" + "11".repeat(32);
+    process.env.BEE_PROXY_TOKEN = "beetok";
+    beeCtor.mockReset();
+    beeUpload.mockResolvedValue({ reference: { toHex: () => "f1".repeat(32) } });
+    createEntity.mockResolvedValue({ entityKey: "0xe", txHash: "0xt" });
+    const { POST } = await import("@/app/api/records/route");
+    const f = new FormData();
+    const c = new Uint8Array(32);
+    c.set(new TextEncoder().encode("GCv1"));
+    f.append("cipher", new Blob([c as BlobPart]));
+    f.append("meta", JSON.stringify({ patient: PATIENT, anonId: "x", recordType: "other", mimeType: "a/b", plainBytes: 1, sha256Plain: "p", sha256Cipher: "c", wrappedKey: { epk: "a", iv: "b", ct: "c" } }));
+    expect((await POST(new NextRequest("http://x/api/records", { method: "POST", body: f }))).status).toBe(200);
+    expect(beeCtor).toHaveBeenCalledWith("https://lab.example/bee", { headers: { authorization: "Bearer beetok" } });
   });
 });
