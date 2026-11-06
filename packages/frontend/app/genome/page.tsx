@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { useRouter } from "next/navigation";
+import { MiniKit } from "@worldcoin/minikit-js";
 import { CONTRACTS, GENOME_REGISTRY_ABI } from "@/lib/contracts";
 import type { ISuccessResult } from "@worldcoin/idkit";
+import { useMiniKitAddress } from "@/hooks/useMiniKitAddress";
 
 function detectFileType(name: string): string {
   const lower = name.toLowerCase();
@@ -15,7 +16,7 @@ function detectFileType(name: string): string {
 }
 
 export default function GenomePage() {
-  const { address } = useAccount();
+  const address = useMiniKitAddress();
   const router = useRouter();
 
   const [file, setFile] = useState<File | null>(null);
@@ -28,8 +29,8 @@ export default function GenomePage() {
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
   const progressRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const { writeContract, data: txHash, isPending } = useWriteContract();
-  const { isSuccess } = useWaitForTransactionReceipt({ hash: txHash });
+  const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   // Clean up interval on unmount
   useEffect(() => () => { if (progressRef.current) clearInterval(progressRef.current); }, []);
@@ -103,18 +104,24 @@ export default function GenomePage() {
       setStatusMsg(`Attested ✓ (${uid.slice(0, 10)}…)`);
 
       setStatusMsg("Submitting to WorldChain…");
-      writeContract({
-        address: CONTRACTS.genomeRegistry as `0x${string}`,
-        abi: GENOME_REGISTRY_ABI,
-        functionName: "submitGenome",
-        args: [
-          address,
-          BigInt(proof.merkle_root),
-          BigInt(proof.nullifier_hash),
-          proof.proof.split(",").map(BigInt) as readonly [bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint],
-          ipfsCid,
-        ],
+      setLoading(true);
+      const { finalPayload } = await MiniKit.commandsAsync.sendTransaction({
+        transaction: [{
+          address: CONTRACTS.genomeRegistry as `0x${string}`,
+          abi: GENOME_REGISTRY_ABI,
+          functionName: "submitGenome",
+          args: [
+            address as `0x${string}`,
+            BigInt(proof.merkle_root),
+            BigInt(proof.nullifier_hash),
+            proof.proof.split(",").map(BigInt) as [bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint],
+            ipfsCid,
+          ],
+        }],
       });
+      if (finalPayload.status === "error") throw new Error(finalPayload.error_code);
+      setStatusMsg("Genome submitted ✓ (tx: " + finalPayload.transaction_id.slice(0, 10) + "...)");
+      setSubmitted(true);
     } catch (err) {
       if (progressRef.current) clearInterval(progressRef.current);
       setProgress(0);
@@ -122,6 +129,7 @@ export default function GenomePage() {
       setError(err instanceof Error ? err.message : "Upload failed");
     } finally {
       setUploading(false);
+      setLoading(false);
     }
   }
 
@@ -132,7 +140,7 @@ export default function GenomePage() {
     setTimeout(() => setCopied(false), 2000);
   }
 
-  if (isSuccess) {
+  if (submitted) {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center gap-6 px-4 text-center">
         {/* Success glow */}
@@ -266,12 +274,12 @@ export default function GenomePage() {
 
       <button
         onClick={handleSubmit}
-        disabled={!file || uploading || isPending || !CONTRACTS.genomeRegistry}
+        disabled={!file || uploading || loading || !CONTRACTS.genomeRegistry}
         className="px-8 py-3 rounded-xl bg-genome-teal text-black font-bold text-sm hover:opacity-90 transition disabled:opacity-40"
       >
         {uploading
           ? (statusMsg ?? "Uploading…")
-          : isPending
+          : loading
           ? "Confirming on-chain…"
           : "Submit Genome · Earn 500 GNM"}
       </button>
