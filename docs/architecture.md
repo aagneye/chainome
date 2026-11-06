@@ -26,7 +26,7 @@ A two-layer patient-sovereign data platform:
 
 **Layer 1 — Public consumer app:** Patients upload medical bills, scans, prescriptions, lab reports, and genomic files. Earn GNM tokens. All data encrypted before leaving the device. Encrypted files stored on Lighthouse (IPFS+Filecoin). Only the IPFS CID lands on WorldChain. All transactions broadcast via WorldChain Anon RPC to strip IP metadata.
 
-**Layer 2 — Private research marketplace:** Pharma/research institutions publish studies on-chain via StudyRegistry. Patients browse, verify identity with World ID, and consent to share specific data types. Institutions query consented metadata from Arkiv. Computation runs on 0G Private Computer (TEE) — only aggregate outputs returned, never raw data.
+**Layer 2 — Private research marketplace:** Pharma/research institutions publish studies on-chain via StudyRegistry. Patients browse, verify identity with World ID, and consent to share specific data types. Institutions query consented metadata from Arkiv and receive only the data types each patient consented to.
 
 ---
 
@@ -94,10 +94,6 @@ Institution
   ├─ Query Arkiv for consented patients matching criteria
   │    (Arkiv checks on-chain consent before serving entity data)
   │
-  ├─ Submit query to 0G Private Computer
-  │    → TEE processes encrypted data
-  │    → Only aggregate outputs returned (e.g., "odds ratio: 1.43, p=0.002")
-  │
   └─ Results hash published → ProtocolRegistry.linkResults(nctNumber, resultsHash)
 ```
 
@@ -132,12 +128,8 @@ Institution
        │  Queryable DB     │  │   Queries Arkiv with     │
        │  Owner = patient  │  │   on-chain consent token │
        │  wallet           │  └────────┬────────────────┘
-       │  Expiry = 10yr    │           │ encrypted data refs
-       └───────────────────┘  ┌────────▼────────────────┐
-                               │  0G PRIVATE COMPUTER    │
-                               │  TEE inference only     │
-                               │  Outputs: aggregates    │
-                               └─────────────────────────┘
+       │  Expiry = 10yr    │
+       └───────────────────┘
 ```
 
 ---
@@ -209,7 +201,7 @@ All contracts deployed on WorldChain (mainnet: chain ID 480, testnet: Sepolia ch
 
 ## Privacy Architecture
 
-**Five-layer privacy model:**
+**Four-layer privacy model:**
 
 | Threat | Mitigation |
 |--------|-----------|
@@ -217,7 +209,6 @@ All contracts deployed on WorldChain (mainnet: chain ID 480, testnet: Sepolia ch
 | Raw genomic data exposure | AES-256 encryption before upload; key never leaves device |
 | Cross-institution patient re-identification | Partial nullifier (first 16 chars) in Arkiv — not full nullifier_hash |
 | GDPR erasure on immutable chain | Crypto-shredding: burn AES key → encrypted blob irrecoverable |
-| Inference from compute | 0G Private Computer TEE: only aggregate outputs returned |
 
 **Crypto-shredding in detail:** The AES-256 key is derived from the World ID `nullifier_hash` via KDF. The `nullifier_hash` is never stored anywhere — it exists transiently during the client-side encryption step. To exercise GDPR Art. 17 (right to erasure), the patient destroys their local key material. The encrypted blob on IPFS remains but becomes permanently unreadable — no key exists or can be derived. The CID on-chain points to gibberish. Personal data is erased without touching the chain.
 
@@ -229,10 +220,8 @@ All contracts deployed on WorldChain (mainnet: chain ID 480, testnet: Sepolia ch
 |-------|--------------------------|
 | **World** (Best use of World ID) | Core primitive: `nullifier_hash` enforces one-genome-per-human at EVM level. 160+ country coverage addresses GWAS diversity gap. PBH for gas subsidies on patient uploads. |
 | **Arkiv** (Best use of Arkiv DB) | Medical record metadata stored as owned entities. Patient wallet = owner. Consent checked on-chain. Expiry enforces GDPR. Cross-institution queryable without centralized broker. |
-| **0G** (Best use of 0G compute) | AI inference on encrypted genomic data inside TEE. Pharma gets aggregate outputs; raw data never leaves patient control. |
 | **EF** (Ethereum Foundation) | WorldChain is OP Stack L2. All contracts EVM-standard. Demonstrates Ethereum's privacy-preserving infrastructure for real-world healthcare use cases. |
-| **ENS** (Ethereum Name Service) | Institution profiles and study identifiers resolve via ENS. Human-readable names for pharma institutions in StudyRegistry. |
-| **Definitive** | Real-world data provenance use case. Genomic + medical records with on-chain consent audit trail exceed FDA RWE Framework quality standards. |
+| **Anon RPC** | All patient transactions are broadcast via WorldChain Anon RPC, so no IP address is linked to a wallet holding medical records. |
 
 ---
 
@@ -242,15 +231,12 @@ All contracts deployed on WorldChain (mainnet: chain ID 480, testnet: Sepolia ch
 
 **Arkiv integration:** Arkiv entity schema is designed and documented; the full SDK integration is a post-hackathon milestone. The architecture is designed for it.
 
-**0G compute:** TEE integration is architecturally planned. The hackathon demo shows the consent-and-query flow; actual TEE execution is scoped for post-hackathon.
-
 **Lab attestation:** The `LabAttestation` contract and `LabRegistry` are deployed and tested. The hackathon demo simulates a lab attestation via the `/api/lab-attest` route. Production integration requires certified sequencing labs.
 
 **CDISC transformation:** Patient records are stored in raw structured form. Transformation to CDISC SDTM/ADaM format for FDA submission is a pipeline step handled by the institutional layer, not GenomeChain. This is by design — GenomeChain is not a LIMS.
 
 **Future work:**
 - Full Arkiv SDK integration with on-chain consent gate
-- 0G Private Computer TEE integration for genomic AI inference
 - Pilot with Apollo, Fortis, AIIMS hospitals for patient record onboarding
 - ENS subnames for institution profiles in StudyRegistry
 - Paymaster integration for gasless patient uploads (PBH sponsorship)
