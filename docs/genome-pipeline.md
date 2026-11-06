@@ -128,13 +128,41 @@ All seven panel REF bases matched GRCh38 at run time.
 - **`CONTRACTS.<name>.address` / `.abi` on plain address strings** (consent, insights, records): these crashed at runtime. Call sites now use the address plus the matching ABI constant. `insights` called `getRecordCount`, which isn't in the frontend ABI; it now uses `recordCount`.
 - **Removed:** the Lighthouse plaintext upload, `NEXT_PUBLIC_LIGHTHOUSE_API_KEY`, and the fake `/api/arkiv-record` route.
 
-## 8. Status and what's left
+## 8. Tests
+
+Vitest in each package; run them all with `pnpm -r test`, or a single package with `pnpm --filter <pkg> test`.
+
+| Package | Tests | Covers |
+|---|---|---|
+| `shared` | 33 | key derivation pinned to a known value (a silent change would orphan every patient's data); wrap/unwrap round trip; wrong key, tampered ciphertext and swapped ephemeral key all rejected; sealed payloads; schema names and the 31-attribute limit; health features never indexed; chromosome ordering |
+| `pipeline` (unit) | 79 | CPIC-style rules for CYP2C19, CYP2C9, SLCO1B1 and TCF7L2; `callFeatures` with REF-mismatch and gVCF handling; streaming AES-GCM (sizes, hashes, fresh nonces, tamper and wrong-key failure, no plaintext leak); shell quoting, `pipefail`, pool concurrency, retry; config validation; 23andMe, gzip, non-VCF and >2 GB detection; Swarm (preflight, no Swarm encryption, retries); Arkiv writes (batches of 10, `key()` links, expiry, sealed features); attestation (skip, score, `isValid` check) |
+| `pipeline` (integration) | 6 | synthetic genome through real bcftools: build detection, `1`→`chr1`, multi-allelic split, indel left-alignment, LowQual dropped, INFO removed, `JOHN_DOE` / `##commandline` removed, QC counts, per-chromosome split, encrypt → decrypt → `bcftools view` |
+| `frontend` | 32 | browser round trip; **cross-package**: WebCrypto decrypts exactly what the Node pipeline wrote; wrong key, tampering and non-GenomeChain payloads rejected; `/api/swarm` ref validation and proxying; `/api/genome` validation and errors; `/api/records` refuses plaintext, validates input, enforces 25 MB and writes the right Swarm and Arkiv payloads; `getGenomeForPatient` mapping |
+
+The integration tests need bcftools, so they're skipped on machines without it. Run them in the lab image:
+
+```bash
+docker run --rm --entrypoint /app/packages/pipeline/node_modules/.bin/vitest genomechain-pipeline run
+```
+
+Last run on the lab VM: 85/85 pipeline tests passed, including integration.
+
+**What the tests caught:**
+- The het/hom QC check was applied to small VCFs, so a valid 5-variant file failed QC. It's now only judged above 10,000 variants, like Ti/Tv.
+- Two test-data mistakes (Arkiv keys must be 32-byte hex) and a module-cache isolation issue.
+
+**Not covered here:**
+- The pre-existing Hardhat contract tests: 28 pass, 37 fail. All 37 failures share one cause: `@nomicfoundation/hardhat-chai-matchers` isn't registered on the `chai` instance the tests import (`Invalid Chai property: emit / revertedWithCustomError`, bigint vs number). This predates this work, and the contracts are unchanged.
+- Live Swarm and Arkiv networks (the SDKs are mocked in unit tests).
+
+## 9. Status and what's left
 
 | Item | Status |
 |---|---|
 | Normalize → QC → PGx → split → encrypt on real WGS data | ✅ verified on the VM |
 | Decrypt round trip + hash checks | ✅ verified on the VM (CLI) |
 | Frontend typecheck + `next build` | ✅ |
+| Unit + integration tests (shared 33, pipeline 85, frontend 32) | ✅ all passing |
 | Swarm upload / Arkiv write against live networks | ⏳ needs a postage batch + Bee URL, and a funded Rabdi key + access key |
 | `arkiv/*.md` and README "proof" values (entity keys, batch ID, writer wallet) | ⏳ filled in after the first live run |
 | `/genome` panel against live Arkiv data | ⏳ after the live run |
