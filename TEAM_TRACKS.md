@@ -1,6 +1,6 @@
 # GenomeChain — Team Work Split
 
-ETHGlobal Mumbai 2026 · 3 tracks, parallel, independent.
+ETHGlobal Mumbai 2026 · 4 tracks, parallel, independent.
 
 ---
 
@@ -184,3 +184,33 @@ cd packages/frontend && pnpm dev            # start dev server on :3000
 | StudyRegistry.sol | Research study marketplace |
 
 All tests passing. Deploy script ready. Waiting on PRIVATE_KEY.
+
+---
+
+## Track D — Anonymous RPC Prize Submission
+**Owner:** Teammate 3 (Anon RPC ETH track)
+
+The code is already built. This track is documentation + prize submission only.
+
+### What's already done
+- `packages/frontend/lib/wagmi.ts` — Anon RPC configured as primary transport
+  - Primary: `https://anon-rpc.worldchain-sepolia.g.alchemy.com/public`
+  - Fallback: public WorldChain RPC
+  - All `useReadContract` calls go through Anon RPC by default
+- `docs/anon-rpc-integration.md` — full integration doc with threat model
+
+### What you need to do
+1. Find the exact prize sponsor on ETHGlobal: `https://ethglobal.com/events/mumbai/prizes`
+   - Search for "Anon RPC", "Anonymous RPC", or "Privacy RPC"
+2. Read `docs/anon-rpc-integration.md` — this is your submission doc
+3. If the prize requires a demo: show that `lib/wagmi.ts` uses the Anon RPC endpoint
+4. Submit on the ETHGlobal prize portal linking the repo and pointing judges to `docs/anon-rpc-integration.md`
+
+### The core argument for judges
+Medical data is GDPR Article 9 (special category). Without Anon RPC:
+`patient home IP → RPC provider logs → wallet address → genome CID → full medical profile linkable`
+
+With Anon RPC: IP stripped at transport layer before hitting the node. Privacy-preserving by default for all patient transactions.
+
+### Key file
+`packages/frontend/lib/wagmi.ts` lines 4–44

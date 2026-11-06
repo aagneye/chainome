@@ -18,14 +18,16 @@ GenomeChain lets patients upload their medical records and genomic data, earn GN
 
 ## Prize Tracks
 
-| Track | Integration |
-|-------|-------------|
-| **World** | World ID Orb verification gating genome submission. `nullifier_hash` enforces one-genome-per-human. PBH for gas subsidies. Anon RPC for IP privacy. |
-| **Arkiv** | Medical record metadata stored as owned patient entities. Consent-gated by on-chain ConsentManager. 10-year GDPR expiry. Cross-institution queryable without centralized broker. |
-| **0G** | AI inference on encrypted genomic data inside TEE. Raw data never leaves patient control. |
-| **EF** | OP Stack L2 (WorldChain). All 7 contracts EVM-standard. |
-| **ENS** | Institution profiles in StudyRegistry resolve via ENS. |
-| **Definitive** | Genome-anchored RWD with on-chain consent audit trail. |
+| Track | Prize | Integration |
+|-------|-------|-------------|
+| **World — IDKit** | $2,500 | World ID Orb gating genome submission. `nullifier_hash` = one-genome-per-human Sybil resistance. Full denied/cancel path. IDKit debrief doc. |
+| **World — Agent Pass** | $5,000 | MiniKit verify gates AI health insights on `/insights`. Prevents AI risk scores from being attributed to unverified actors. |
+| **Arkiv** | $4,000 | Medical record metadata as patient-owned Arkiv entities. Consent-gated, GDPR expiry, cross-institution queryable. 5/5 prize submission files in `docs/arkiv/`. |
+| **0G** | $15,000 | `/api/health-insights` calls 0G Private Computer TEE. Polygenic risk scores, pharmacogenomics, ancestry computed on encrypted genome. |
+| **EF** | $15,000 | `ProtocolRegistry.sol` pre-registers clinical trial protocols on-chain before CT.gov. Detects outcome switching cryptographically. |
+| **Anonymous RPC** | TBD | All patient transactions routed via WorldChain Anon RPC (`wagmi.ts`). IP stripped before hitting node — breaks IP→wallet→genome linkage. GDPR Art. 9 compliance at transport layer. |
+| **ENS** | $10,000 | `DatasetRegistry.sol` registers each dataset as `slug.genomechain.eth` ENS subname. Human-readable identity for medical datasets. |
+| **Definitive** | $5,000 | Dataset tokens (ERC-20 per dataset) tradeable on Definitive DEX. On-chain access control via `purchaseAccess()`. |
 
 ---
 
@@ -108,6 +110,11 @@ Network: WorldChain Sepolia (chain ID 4801) for testnet, WorldChain mainnet (cha
 - [`docs/arkiv/why-arkiv.md`](docs/arkiv/why-arkiv.md) — Arkiv prize submission
 - [`docs/arkiv/reach.md`](docs/arkiv/reach.md) — user reach and pilot plan
 - [`docs/arkiv/friction.md`](docs/arkiv/friction.md) — integration friction report
+- [`docs/arkiv/how-you-use-arkiv.md`](docs/arkiv/how-you-use-arkiv.md) — Arkiv usage walkthrough (5th prize file)
+- [`docs/anon-rpc-integration.md`](docs/anon-rpc-integration.md) — Anonymous RPC integration + threat model
+- [`docs/ens-integration.md`](docs/ens-integration.md) — ENS subname architecture for datasets
+- [`docs/idkit-integration-debrief.md`](docs/idkit-integration-debrief.md) — World IDKit debrief (prize submission)
+- [`TEAM_TRACKS.md`](TEAM_TRACKS.md) — team work split and remaining tasks
 
 ---
 
