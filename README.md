@@ -1,4 +1,4 @@
-# GenomeChain
+# Chainome
 
 **Patient-sovereign genomic data marketplace on WorldChain.**
 
@@ -8,7 +8,7 @@ ETHGlobal Mumbai 2026 — Nov 5–8.
 
 ## What It Is
 
-GenomeChain lets patients store their whole genome and medical records, earn GNM tokens, and consent to share them with research institutions.
+Chainome lets patients store their whole genome and medical records, earn GNM tokens, and consent to share them with research institutions.
 - A certified lab node normalizes the patient's VCF (≤2 GB) to GRCh38, splits it per chromosome and encrypts each segment to the patient's key.
 - Ciphertext lives on **Swarm**, the queryable index on **Arkiv**, and one manifest reference on **World Chain**.
 - World ID enforces one genome per unique human at the EVM level, the Sybil-resistance primitive that every prior genomic marketplace lacked.
@@ -92,7 +92,7 @@ Network: WorldChain Sepolia (chain ID 4801) · Explorer: https://worldchain-sepo
 | Genome pipeline | `packages/pipeline`: Node 22 + bcftools 1.16 / samtools / CrossMap in Docker, run on the lab node |
 | File storage | Swarm (`@ethersphere/bee-js` 13): AES-256-GCM ciphertext only, per-chromosome segments |
 | Encryption | per-file data keys wrapped to the patient's X25519 key (derived from a wallet signature), `packages/shared/src/keys.ts` |
-| Metadata DB | Arkiv Rabdi testnet (`@arkiv-network/sdk` 1.0): `genomechain.*` schemas in `packages/shared/src/arkiv.ts` |
+| Metadata DB | Arkiv Rabdi testnet (`@arkiv-network/sdk` 1.0): `chainome.*` schemas in `packages/shared/src/arkiv.ts` |
 | Privacy RPC | WorldChain Anon RPC — strips IP from all chain reads |
 | Frontend | Next.js, Wagmi, Viem |
 | Token | ERC-20 GNM with MINTER_ROLE |
@@ -118,7 +118,7 @@ Network: WorldChain Sepolia (chain ID 4801) · Explorer: https://worldchain-sepo
 ## Genome pipeline (lab node)
 
 ```bash
-docker build -f packages/pipeline/docker/Dockerfile -t genomechain-pipeline .
+docker build -f packages/pipeline/docker/Dockerfile -t chainome-pipeline .
 bash packages/pipeline/scripts/setup-vm.sh          # GRCh38 FASTA, liftover chain, GIAB HG002 demo VCF
 bash packages/pipeline/scripts/run.sh --vcf /gc/in/HG002_GRCh38.vcf.gz \
   --patient 0x<wallet> --patient-pubkey <from /genome> [--nullifier <World ID nullifier>] [--dry-run]

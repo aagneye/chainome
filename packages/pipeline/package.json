@@ -16,7 +16,7 @@
     "@arkiv-network/sdk": "^1.0.1",
     "@ethersphere/bee-js": "^13.2.0",
     "viem": "^2.17.0",
-    "@genomechain/shared": "workspace:*",
+    "@chainome/shared": "workspace:*",
     "tsx": "^4.23.15"
   },
   "devDependencies": {

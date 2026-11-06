@@ -1,4 +1,4 @@
-# GenomeChain — Team Work Split
+# Chainome — Team Work Split
 
 ETHGlobal Mumbai 2026 · 4 tracks, parallel, independent.
 

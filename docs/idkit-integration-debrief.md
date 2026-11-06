@@ -1,15 +1,15 @@
-# IDKit Integration Debrief — GenomeChain
+# IDKit Integration Debrief — Chainome
 
 **Date:** 2026-11-06  
 **Hackathon:** ETHGlobal Mumbai 2026  
-**Project:** GenomeChain — patient-sovereign genomic data marketplace on WorldChain  
-**Integrator:** Abhimanyu R B (GenomeChain team)
+**Project:** Chainome — patient-sovereign genomic data marketplace on WorldChain  
+**Integrator:** Abhimanyu R B (Chainome team)
 
 ---
 
 ## What We Built
 
-GenomeChain uses World ID (IDKit) as the Sybil-resistance layer for genomic data submission. The specific trust moment: **one genome per unique human**. Without this, a single actor could submit thousands of fake genomes and earn GNM tokens at scale — the same attack that killed Nebula Genomics and Hu-manity.co.
+Chainome uses World ID (IDKit) as the Sybil-resistance layer for genomic data submission. The specific trust moment: **one genome per unique human**. Without this, a single actor could submit thousands of fake genomes and earn GNM tokens at scale — the same attack that killed Nebula Genomics and Hu-manity.co.
 
 Integration points:
 - **Frontend:** `@worldcoin/idkit` IDKitWidget on `/verify` page
@@ -39,7 +39,7 @@ Integration points:
 
 2. **Simulator** — `simulator.worldcoin.org` saved hours. Didn't need a physical Orb to iterate.
 
-3. **`nullifier_hash` as anonymous ID** — this is exactly the primitive GenomeChain needed. Stable per (appId, action), not linkable across apps, prevents duplicate submissions without revealing identity.
+3. **`nullifier_hash` as anonymous ID** — this is exactly the primitive Chainome needed. Stable per (appId, action), not linkable across apps, prevents duplicate submissions without revealing identity.
 
 4. **Incognito Actions** — the action scoping (`genome_submission`) is clean. Future actions (e.g. `consent_revocation`, `data_access_request`) can be added without collision.
 
@@ -65,13 +65,13 @@ Integration points:
 
 ## Missing Capabilities We Wanted
 
-1. **Proof expiry** — no built-in TTL on proofs. GenomeChain needs "re-verify every 365 days" for longitudinal studies. Currently we'd have to nullify and re-submit, which resets the nullifier_hash. A `verifyWithExpiry(proof, ttl)` or timestamp-bound proof would be valuable.
+1. **Proof expiry** — no built-in TTL on proofs. Chainome needs "re-verify every 365 days" for longitudinal studies. Currently we'd have to nullify and re-submit, which resets the nullifier_hash. A `verifyWithExpiry(proof, ttl)` or timestamp-bound proof would be valuable.
 
 2. **Credential composability** — we wanted to combine Proof of Human (Orb) with Passport NFC to verify both humanity AND nationality for GDPR-scoped data marketplaces. No multi-credential proof currently.
 
 3. **Server-side proof verification without custom Ethereum node** — the `verifyProof` JS SDK (`@worldcoin/idkit/server`) exists but requires a network call to the World ID cloud verifier. For production latency, an offline verifier (WASM) would be preferable.
 
-4. **Agent Pass for AI-gated actions** — GenomeChain's `/insights` page shows genomic risk scores. We explored requiring a fresh World ID Agent Pass before releasing AI insights ("prove you're human before getting your genome's risk scores"). We didn't integrate it in the hackathon window, but this is the ideal use case: human-in-the-loop AI access control.
+4. **Agent Pass for AI-gated actions** — Chainome's `/insights` page shows genomic risk scores. We explored requiring a fresh World ID Agent Pass before releasing AI insights ("prove you're human before getting your genome's risk scores"). We didn't integrate it in the hackathon window, but this is the ideal use case: human-in-the-loop AI access control.
 
 ---
 
@@ -89,8 +89,8 @@ We chose `VerificationLevel.Orb` (biometric) over Device or Passport because:
 
 - **Data quality requirement:** Genomic data has decade-long research value. A bot-submitted fake genome corrupts every downstream study. Device-level verification (less strict) doesn't eliminate coordinated Sybil attacks at scale.
 - **One-genome-per-human is absolute:** Unlike "one vote per person" (where you might accept some over-counting), a duplicate genome submission is a direct protocol exploit. Orb is the only credential where the uniqueness guarantee is biometric.
-- **Target population:** GenomeChain targets patients who would visit a clinical site for Orb verification — the same friction as signing an IRB consent form.
+- **Target population:** Chainome targets patients who would visit a clinical site for Orb verification — the same friction as signing an IRB consent form.
 
 ---
 
-*GenomeChain — ETHGlobal Mumbai 2026*
+*Chainome — ETHGlobal Mumbai 2026*

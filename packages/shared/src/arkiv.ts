@@ -11,7 +11,7 @@
  */
 import { addr, bool, bytes, dec, defineSchema, i32, key, str, u64 } from "@arkiv-network/sdk/schema";
 
-export const SCHEMA_PREFIX = "genomechain";
+export const SCHEMA_PREFIX = "chainome";
 
 /** One per processed genome. Owned by the lab wallet that ran the pipeline. */
 export const GenomeDataset = defineSchema(`${SCHEMA_PREFIX}.genome_dataset`, {

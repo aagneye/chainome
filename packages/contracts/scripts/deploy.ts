@@ -68,8 +68,8 @@ async function main() {
   console.log(`ProtocolRegistry:    ${await protocols.getAddress()}`);
 
   // 8. Certify deployer as demo lab
-  await labRegistry.certifyLab(deployer.address, "GenomeChain Demo Lab");
-  console.log(`Certified ${deployer.address} as "GenomeChain Demo Lab"`);
+  await labRegistry.certifyLab(deployer.address, "Chainome Demo Lab");
+  console.log(`Certified ${deployer.address} as "Chainome Demo Lab"`);
 
   // 9-10. Grant MINTER_ROLE to registry + vault
   const MINTER_ROLE = await token.MINTER_ROLE();

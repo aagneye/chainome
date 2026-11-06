@@ -5,7 +5,7 @@
  * position's REF base is checked against the GRCh38 FASTA at run time; a mismatch
  * is reported as "ref_mismatch" and excluded instead of producing a wrong call.
  */
-import type { FeatureCall, FeatureSummary, PgxPhenotype, RiskBand } from "@genomechain/shared/arkiv";
+import type { FeatureCall, FeatureSummary, PgxPhenotype, RiskBand } from "@chainome/shared/arkiv";
 import { env } from "./config";
 import { bash, q, run } from "./sh";
 

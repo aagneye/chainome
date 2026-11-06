@@ -2,7 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   // Shared Arkiv schemas + key wrapping are TypeScript source in the workspace.
-  transpilePackages: ["@genomechain/shared"],
+  transpilePackages: ["@chainome/shared"],
   webpack: (config) => {
     // wagmi/rainbowkit optional deps that are never used in the browser bundle
     config.externals.push("pino-pretty", "lokijs", "encoding");

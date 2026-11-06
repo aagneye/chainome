@@ -17,7 +17,7 @@ import { keccak256, toBytes } from "viem";
  */
 
 const MOCK_STUDY = {
-  title:          "BRCA2 Carriers — Olaparib Response (GenomeChain Study GC-001)",
+  title:          "BRCA2 Carriers — Olaparib Response (Chainome Study GC-001)",
   nctNumber:      "NCT99000001",
   institution:    "0xMockPharmaCo",
   primaryEndpoint:"Overall response rate at 12 months",

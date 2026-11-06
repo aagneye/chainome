@@ -1,4 +1,4 @@
-# Swarm in GenomeChain
+# Swarm in Chainome
 
 ## What's on Swarm vs Arkiv
 
@@ -40,7 +40,7 @@ You need Docker, a Bee node URL and a usable postage batch, plus (for the Arkiv 
 
 ```bash
 # 1. lab node image + reference + demo genome (GIAB HG002, GRCh38, public NIST data)
-docker build -f packages/pipeline/docker/Dockerfile -t genomechain-pipeline .
+docker build -f packages/pipeline/docker/Dockerfile -t chainome-pipeline .
 GC_HOME=$PWD/.gc bash packages/pipeline/scripts/setup-vm.sh
 
 # 2. secrets (never committed)
@@ -56,7 +56,7 @@ GC_HOME=$PWD/.gc bash packages/pipeline/scripts/run.sh --vcf /gc/in/HG002_GRCh38
   --patient 0x<wallet> --patient-pubkey <key from /genome>
 
 # 4. read: chr22 back from Swarm, decrypted, both hashes checked
-docker run --rm --network host -v $PWD/.gc:/gc genomechain-pipeline src/verify.ts \
+docker run --rm --network host -v $PWD/.gc:/gc chainome-pipeline src/verify.ts \
   --manifest <manifestRef printed above> --chrom chr22 --signature 0x<signature from /genome>
 ```
 

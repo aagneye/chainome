@@ -4,7 +4,7 @@ import { rabdi } from "@arkiv-network/sdk/chains";
 import { asc, eq } from "@arkiv-network/sdk/query";
 import { addr, key } from "@arkiv-network/sdk/schema";
 import { hexToString, http, type Hex } from "viem";
-import { GenomeDataset, GenomeFeatures, GenomeSegment } from "@genomechain/shared/arkiv";
+import { GenomeDataset, GenomeFeatures, GenomeSegment } from "@chainome/shared/arkiv";
 
 /** Server-side only: the Arkiv access key must not reach the browser. */
 export const arkiv = createPublicClient({

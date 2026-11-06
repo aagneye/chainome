@@ -58,7 +58,7 @@ ON-CHAIN PUBLICATION
 
 ## Next Steps
 
-- [x] Concept direction locked: GenomeChain — global patient-sovereign health data ecosystem
+- [x] Concept direction locked: Chainome — global patient-sovereign health data ecosystem
 - [x] Full ecosystem flow mapped → `docs/ecosystem-flow.md` + `docs/ecosystem-flow.html`
 - [ ] Map to specific sponsor track criteria (World, 0G, EF, Arkiv)
 - [ ] `feature/` branch from `dev` → start building

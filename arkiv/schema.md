@@ -1,6 +1,6 @@
 # Arkiv schema
 
-GenomeChain writes five entity types to the **Rabdi testnet** (chain `7794095`, RPC `https://rpc.rabdi.db-chain.testnet.arkiv.network`) through `@arkiv-network/sdk` 1.0.1 named schemas. The source of truth is [`packages/shared/src/arkiv.ts`](../packages/shared/src/arkiv.ts), which the lab pipeline (writes) and the web app (reads) both import.
+Chainome writes five entity types to the **Rabdi testnet** (chain `7794095`, RPC `https://rpc.rabdi.db-chain.testnet.arkiv.network`) through `@arkiv-network/sdk` 1.0.1 named schemas. The source of truth is [`packages/shared/src/arkiv.ts`](../packages/shared/src/arkiv.ts), which the lab pipeline (writes) and the web app (reads) both import.
 
 **Rule:** Arkiv entities are public. They hold **pointers, hashes and coarse metadata only**:
 - Genome bytes are AES-256-GCM ciphertext on **Swarm** (see [swarm.md](swarm.md)).
@@ -8,7 +8,7 @@ GenomeChain writes five entity types to the **Rabdi testnet** (chain `7794095`, 
 
 ## Entities
 
-### `genomechain.genome_dataset` — one per processed genome
+### `chainome.genome_dataset` — one per processed genome
 
 | Column | Type | Indexed | Why |
 |---|---|---|---|
@@ -26,7 +26,7 @@ GenomeChain writes five entity types to the **Rabdi testnet** (chain `7794095`, 
 | `manifestRef` | str | | Swarm ref of `manifest.json`. The same string is attested by the lab and anchored in `GenomeRegistry` |
 | `pipelineVersion` | str | | reproducibility |
 
-### `genomechain.genome_segment` — one per chromosome (22–25 per genome)
+### `chainome.genome_segment` — one per chromosome (22–25 per genome)
 
 | Column | Type | Indexed | Why |
 |---|---|---|---|
@@ -38,7 +38,7 @@ GenomeChain writes five entity types to the **Rabdi testnet** (chain `7794095`, 
 | `swarmRef` | str | | plain Swarm ref of the **ciphertext** (safe to publish) |
 | `sha256Cipher`, `sha256Plain` | str | | the browser verifies both after download and decryption |
 
-### `genomechain.genome_features` — one per genome
+### `chainome.genome_features` — one per genome
 
 | Column | Type | Indexed | Why |
 |---|---|---|---|
@@ -47,7 +47,7 @@ GenomeChain writes five entity types to the **Rabdi testnet** (chain `7794095`, 
 | `panelVersion` | str | | |
 | `summary` | bytes | | `EncryptedBlob` JSON: PGx phenotypes (CYP2C19, CYP2C9, SLCO1B1) and a TCF7L2 risk marker, **sealed to the patient's X25519 key** |
 
-### `genomechain.medical_record` — one per uploaded document
+### `chainome.medical_record` — one per uploaded document
 
 | Column | Type | Indexed | Why |
 |---|---|---|---|
@@ -59,7 +59,7 @@ GenomeChain writes five entity types to the **Rabdi testnet** (chain `7794095`, 
 | `cipherBytes` | u64 | | |
 | `manifestRef` | str | | Swarm `RecordManifest` (file ref and wrapped key); the same string goes to `RecordVault.addRecord` |
 
-### `genomechain.access_grant` — patient → institution (schema defined; UI in progress)
+### `chainome.access_grant` — patient → institution (schema defined; UI in progress)
 
 | Column | Type | Indexed | Why |
 |---|---|---|---|

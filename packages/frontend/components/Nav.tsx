@@ -19,7 +19,7 @@ export function Nav() {
   return (
     <nav className="fixed top-0 inset-x-0 z-50 border-b border-genome-border bg-genome-navy/80 backdrop-blur">
       <div className="max-w-4xl mx-auto px-4 h-14 flex items-center gap-6">
-        <Link href="/" className="font-bold text-genome-teal mr-2">GenomeChain</Link>
+        <Link href="/" className="font-bold text-genome-teal mr-2">Chainome</Link>
         {links.map(({ href, label }) => (
           <Link
             key={href}

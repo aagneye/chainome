@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { GenomeManifest } from "@genomechain/shared/manifest";
+import type { GenomeManifest } from "@chainome/shared/manifest";
 import type { GenomeView } from "@/lib/arkiv-server";
 import { downloadAndDecrypt, fetchManifest, type SegmentCheck } from "@/lib/genome-crypto";
 import type { usePatientKey } from "@/lib/use-patient-key";

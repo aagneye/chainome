@@ -67,7 +67,7 @@ export default function VerifyPage() {
           <p className="text-gray-400 text-sm leading-relaxed mb-2">{error}</p>
           <div className="p-3 rounded-lg bg-red-900/20 border border-red-800/50 text-xs text-red-300 text-left mb-6">
             <p className="font-semibold mb-1">Why is verification required?</p>
-            <p>GenomeChain enforces one genome per unique human via World ID. Unverified wallets cannot submit genomic data, preventing Sybil attacks that would pollute the research dataset.</p>
+            <p>Chainome enforces one genome per unique human via World ID. Unverified wallets cannot submit genomic data, preventing Sybil attacks that would pollute the research dataset.</p>
           </div>
           <button
             onClick={() => { setStatus("idle"); setError(null); }}

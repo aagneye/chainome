@@ -35,7 +35,7 @@ export default function Home() {
       const { finalPayload } = await MiniKit.commandsAsync.walletAuth({
         nonce,
         expirationTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-        statement: "Sign in to GenomeChain — patient-sovereign data marketplace",
+        statement: "Sign in to Chainome — patient-sovereign data marketplace",
       });
       if (finalPayload.status === "error") {
         setError("Sign in failed. Try again.");

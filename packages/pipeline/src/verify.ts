@@ -9,8 +9,8 @@ import { createDecipheriv, createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import { parseArgs } from "node:util";
 import { Bee } from "@ethersphere/bee-js";
-import { keyPairFromSignature, unwrapKey } from "@genomechain/shared/keys";
-import { SEGMENT_HEADER_BYTES, SEGMENT_MAGIC, type GenomeManifest } from "@genomechain/shared/manifest";
+import { keyPairFromSignature, unwrapKey } from "@chainome/shared/keys";
+import { SEGMENT_HEADER_BYTES, SEGMENT_MAGIC, type GenomeManifest } from "@chainome/shared/manifest";
 import { env } from "./config";
 
 const { values } = parseArgs({
@@ -43,7 +43,7 @@ const blob = values["segment-file"]
 const sha = (b: Uint8Array) => createHash("sha256").update(b).digest("hex");
 const cipherOk = sha(blob) === seg.sha256Cipher;
 
-if (blob.subarray(0, 4).toString("ascii") !== SEGMENT_MAGIC) throw new Error("not a GenomeChain segment");
+if (blob.subarray(0, 4).toString("ascii") !== SEGMENT_MAGIC) throw new Error("not a Chainome segment");
 const { privateKey } = keyPairFromSignature(values.signature);
 const dek = unwrapKey(seg.wrappedKey, privateKey);
 const iv = blob.subarray(4, SEGMENT_HEADER_BYTES);
