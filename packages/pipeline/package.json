@@ -10,17 +10,20 @@
     "start": "tsx src/cli.ts",
     "query": "tsx src/query.ts",
     "typecheck": "tsc -p tsconfig.json",
-    "verify": "tsx src/verify.ts"
+    "verify": "tsx src/verify.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@arkiv-network/sdk": "^1.0.1",
     "@ethersphere/bee-js": "^13.2.0",
-    "viem": "^2.17.0",
     "@genomechain/shared": "workspace:*",
-    "tsx": "^4.23.15"
+    "tsx": "^4.23.15",
+    "viem": "^2.17.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
-    "typescript": "^5.4.0"
+    "typescript": "^5.4.0",
+    "vitest": "^5.1.0"
   }
 }
