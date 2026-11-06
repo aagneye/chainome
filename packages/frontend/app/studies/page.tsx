@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useMiniKitAddress } from "@/hooks/useMiniKitAddress";
 import { MiniKit } from "@worldcoin/minikit-js";
+import { encodeFunctionData } from "viem";
 import { CONTRACTS, STUDY_REGISTRY_ABI } from "@/lib/contracts";
 
 const MOCK_STUDIES = [
@@ -96,15 +97,20 @@ export default function StudiesPage() {
     const types = selectedTypes[studyId] ?? [];
     setLoading(true);
     try {
-      const { finalPayload } = await MiniKit.commandsAsync.sendTransaction({
-        transaction: [{
-          address: CONTRACTS.studyRegistry as `0x${string}`,
-          abi: STUDY_REGISTRY_ABI,
-          functionName: "joinStudy",
-          args: [BigInt(studyId), types],
+      const result = await MiniKit.sendTransaction({
+        transactions: [{
+          to: CONTRACTS.studyRegistry as `0x${string}`,
+          data: encodeFunctionData({
+            abi: STUDY_REGISTRY_ABI,
+            functionName: "joinStudy",
+            args: [BigInt(studyId), types],
+          }),
+          value: "0x0",
         }],
+        chainId: 4801,
       });
-      if (finalPayload.status === "error") throw new Error(finalPayload.error_code);
+      const finalPayload = result.data as { status?: string; error_code?: string } | null;
+      if (!finalPayload || finalPayload.status === "error") throw new Error(finalPayload?.error_code ?? "tx failed");
       setJoinedIds((prev) => [...prev, studyId]);
       setJoiningId(null);
     } catch (err) {

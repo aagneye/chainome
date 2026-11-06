@@ -32,16 +32,18 @@ export default function Home() {
         return;
       }
       const nonce = crypto.randomUUID().replace(/-/g, "");
-      const { finalPayload } = await MiniKit.commandsAsync.walletAuth({
+      const result = await MiniKit.walletAuth({
         nonce,
         expirationTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         statement: "Sign in to Chainome — patient-sovereign data marketplace",
       });
-      if (finalPayload.status === "error") {
+      const finalPayload = result.data;
+      if (!finalPayload || (finalPayload as { status?: string }).status === "error") {
         setError("Sign in failed. Try again.");
         return;
       }
-      sessionStorage.setItem("minikit_address", finalPayload.address);
+      const authPayload = finalPayload as { address: string; status?: string };
+      sessionStorage.setItem("minikit_address", authPayload.address);
       sessionStorage.setItem("minikit_signed_in", "true");
       router.push("/verify");
     } catch (e) {
