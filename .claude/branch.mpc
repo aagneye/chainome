@@ -1,0 +1,73 @@
+# GenomeChain — Branch & Commit Rules for Claude
+
+## Branch Strategy
+
+| Branch  | Purpose                        | Who touches it          |
+|---------|--------------------------------|-------------------------|
+| `main`  | Production — DO NOT TOUCH      | Never push directly     |
+| `master`| Staging — DO NOT TOUCH         | Never push directly     |
+| `dev`   | Integration branch             | Merge feature PRs here  |
+| `feat/*`| Feature work                   | Your working branch     |
+| `fix/*` | Bug fixes                      | Your working branch     |
+| `docs/*`| Documentation only             | Your working branch     |
+
+## Workflow
+
+1. Always branch off `dev`:
+   ```bash
+   git checkout dev && git pull origin dev
+   git checkout -b feat/<your-feature>
+   ```
+
+2. Commit often. Every meaningful change = one commit.
+
+3. Push and open PR targeting `dev` (never master/main):
+   ```bash
+   git push -u origin feat/<your-feature>
+   gh pr create --base dev
+   ```
+
+4. All PRs must target `dev`. Never open a PR to `master` or `main`.
+
+## Commit Format
+
+```
+type(scope): short description
+
+feat     – new feature
+fix      – bug fix
+docs     – documentation only
+chore    – config, deps, tooling
+refactor – restructure without behaviour change
+test     – tests only
+```
+
+Examples:
+```
+feat(contracts): add StudyRegistry joinStudy logic
+fix(frontend): handle missing genome key gracefully
+docs(arkiv): add friction report for prize submission
+chore(deps): bump @worldcoin/minikit-js to 1.4.0
+```
+
+## End every commit with:
+```
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+```
+
+## Never commit:
+- `.env`, `.env.local`, `.env*.local`
+- `packages/contracts/.env`
+- Private keys, API keys, mnemonics
+- `node_modules/`, `.next/`, `artifacts/`, `typechain-types/`
+
+## Prize Track Context (3 tracks only)
+- **World** — MiniKit mini app, World ID Orb verification
+- **Arkiv** — genome + medical record metadata on Arkiv Rabdi testnet
+- **EF Anon-RPC** — all chain reads through WorldChain Anon RPC
+
+Dropped: 0G, ENS, Definitive — do not re-add these.
+
+## Contract Addresses (WorldChain Sepolia, chain 4801)
+See `packages/frontend/.env.local` and `README.md` — all 7 contracts deployed.
+Do not redeploy unless explicitly asked.
