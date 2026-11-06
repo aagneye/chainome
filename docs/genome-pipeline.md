@@ -137,7 +137,7 @@ Vitest in each package; run them all with `pnpm -r test`, or a single package wi
 | `shared` | 33 | key derivation pinned to a known value (a silent change would orphan every patient's data); wrap/unwrap round trip; wrong key, tampered ciphertext and swapped ephemeral key all rejected; sealed payloads; schema names and the 31-attribute limit; health features never indexed; chromosome ordering |
 | `pipeline` (unit) | 79 | CPIC-style rules for CYP2C19, CYP2C9, SLCO1B1 and TCF7L2; `callFeatures` with REF-mismatch and gVCF handling; streaming AES-GCM (sizes, hashes, fresh nonces, tamper and wrong-key failure, no plaintext leak); shell quoting, `pipefail`, pool concurrency, retry; config validation; 23andMe, gzip, non-VCF and >2 GB detection; Swarm (preflight, no Swarm encryption, retries); Arkiv writes (batches of 10, `key()` links, expiry, sealed features); attestation (skip, score, `isValid` check) |
 | `pipeline` (integration) | 6 | synthetic genome through real bcftools: build detection, `1`→`chr1`, multi-allelic split, indel left-alignment, LowQual dropped, INFO removed, `JOHN_DOE` / `##commandline` removed, QC counts, per-chromosome split, encrypt → decrypt → `bcftools view` |
-| `frontend` | 32 | browser round trip; **cross-package**: WebCrypto decrypts exactly what the Node pipeline wrote; wrong key, tampering and non-GenomeChain payloads rejected; `/api/swarm` ref validation and proxying; `/api/genome` validation and errors; `/api/records` refuses plaintext, validates input, enforces 25 MB and writes the right Swarm and Arkiv payloads; `getGenomeForPatient` mapping |
+| `frontend` | 48 | MiniKit send → userop poll → tx hash (pending, transient errors, failure, timeout), calldata/chain, refuses outside World App, `signMessage`; `/api/userop` validation and proxying; browser round trip; **cross-package**: WebCrypto decrypts exactly what the Node pipeline wrote; wrong key, tampering and non-GenomeChain payloads rejected; `/api/swarm` ref validation and proxying; `/api/genome` validation and errors; `/api/records` refuses plaintext, validates input, enforces 25 MB and writes the right Swarm and Arkiv payloads; `getGenomeForPatient` mapping |
 
 The integration tests need bcftools, so they're skipped on machines without it. Run them in the lab image:
 
@@ -155,14 +155,29 @@ Last run on the lab VM: 85/85 pipeline tests passed, including integration.
 - The pre-existing Hardhat contract tests: 28 pass, 37 fail. All 37 failures share one cause: `@nomicfoundation/hardhat-chai-matchers` isn't registered on the `chai` instance the tests import (`Invalid Chai property: emit / revertedWithCustomError`, bigint vs number). This predates this work, and the contracts are unchanged.
 - Live Swarm and Arkiv networks (the SDKs are mocked in unit tests).
 
-## 9. Status and what's left
+## 9. World App (MiniKit) notes
+
+wagmi on `dev` has no connectors, so every wallet action goes through MiniKit:
+
+- **Writes:** `lib/minikit-tx.ts` → `MiniKit.sendTransaction({ chainId, transactions: [{ to, data }] })`. MiniKit v2 resolves with a **user-operation hash**, so `waitForUserOp` polls `/api/userop/<hash>` (a proxy of `developer.world.org/api/v2/minikit/userop/<hash>`) until it has a transaction hash. Pages use `useMiniKitTx()`; `isSubmitted` = accepted by World App, `isSuccess` = confirmed on chain.
+- **Patient key:** `MiniKit.signMessage(KEY_DERIVATION_MESSAGE)` → HKDF → X25519.
+- **World ID signal:** `/verify` binds the proof to the MiniKit address, the same address `submitGenome` is called with (the contract checks `signal`).
+- **Proof encoding:** `submitGenome` now decodes IDKit's proof with `decodeAbiParameters("uint256[8]")`. The old `proof.split(",")` produced a 1-element array, so the call could never succeed.
+
+**Check on a real device before the demo:**
+1. **Allowlist the contracts** in the Developer Portal (Mini App → Permissions → Contract Entrypoints): `GenomeRegistry`, `RecordVault`, `ConsentManager`, `StudyRegistry`. Otherwise World App rejects with `invalid_contract`.
+2. **World Chain Sepolia (4801):** the MiniKit docs only show mainnet (480) in their examples. Confirm `sendTransaction` works on 4801, or set `NEXT_PUBLIC_CHAIN_ID`.
+3. **Signature determinism:** World App wallets are smart accounts. Sign `KEY_DERIVATION_MESSAGE` twice and check that `/genome` shows the same public key both times. If it differs, the derived key isn't stable. `GenomePanel` detects this ("different key than the one your lab encrypted to") rather than failing per segment.
+
+## 10. Status and what's left
 
 | Item | Status |
 |---|---|
 | Normalize → QC → PGx → split → encrypt on real WGS data | ✅ verified on the VM |
 | Decrypt round trip + hash checks | ✅ verified on the VM (CLI) |
 | Frontend typecheck + `next build` | ✅ |
-| Unit + integration tests (shared 33, pipeline 85, frontend 32) | ✅ all passing |
+| Unit + integration tests (shared 33, pipeline 85, frontend 48) | ✅ all passing |
+| Wallet actions via MiniKit (`/genome`, `/records`, `/consent` writes; patient key via `MiniKit.signMessage`; `/verify` + `/insights` address) | ✅ typechecked + unit-tested, ⏳ not yet run in World App |
 | Swarm upload / Arkiv write against live networks | ⏳ needs a postage batch + Bee URL, and a funded Rabdi key + access key |
 | `arkiv/*.md` and README "proof" values (entity keys, batch ID, writer wallet) | ⏳ filled in after the first live run |
 | `/genome` panel against live Arkiv data | ⏳ after the live run |
