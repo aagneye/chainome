@@ -9,6 +9,8 @@ const links = [
   { href: "/genome",    label: "Genome" },
   { href: "/records",   label: "Records" },
   { href: "/consent",   label: "Consent" },
+  { href: "/studies",   label: "Studies" },
+  { href: "/datasets",  label: "Datasets" },
 ];
 
 export function Nav() {
