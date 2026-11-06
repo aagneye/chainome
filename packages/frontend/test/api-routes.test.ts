@@ -195,3 +195,30 @@ describe("POST /api/records", () => {
     expect((await res.json()).error).toBe("batch expired");
   });
 });
+
+// ── /api/userop/[hash] ─────────────────────────────────────────────────────────
+describe("GET /api/userop/[hash]", () => {
+  async function get(hash: string) {
+    const { GET } = await import("@/app/api/userop/[hash]/route");
+    return GET(new NextRequest(`http://x/api/userop/${hash}`), { params: { hash } });
+  }
+
+  it.each(["abc", "0x" + "ab".repeat(31), "ab".repeat(32), "0x" + "zz".repeat(32)])("rejects invalid hash %j", async (h) => {
+    vi.stubGlobal("fetch", vi.fn());
+    expect((await get(h)).status).toBe(400);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("proxies the Developer Portal status, returning only status and tx hash", async () => {
+    const hash = "0x" + "ab".repeat(32);
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ status: "success", transaction_hash: "0xtx", sender: "0xsecret" })));
+    const res = await get(hash);
+    expect(vi.mocked(fetch).mock.calls[0][0]).toBe(`https://developer.world.org/api/v2/minikit/userop/${hash}`);
+    expect(await res.json()).toEqual({ status: "success", transaction_hash: "0xtx" });
+  });
+
+  it("maps upstream errors to 502", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("down", { status: 500 })));
+    expect((await get("0x" + "ab".repeat(32))).status).toBe(502);
+  });
+});
