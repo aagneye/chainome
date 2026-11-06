@@ -1,0 +1,66 @@
+# Chainome lab node on the Azure VM: HTTPS proxy → job service → pipeline (→ Bee/Swarm, Arkiv, World Chain)
+#
+#   GC_HOME=/data/biohub/genomechain LAB_DOMAIN=<label>.eastus.cloudapp.azure.com \
+#     docker compose -f deploy/azure/docker-compose.yml up -d            # without a local Bee node
+#   … --profile bee up -d                                                 # with a local Bee node
+#
+# Secrets live in $GC_HOME/pipeline.env (see pipeline.env.example). Nothing secret is in this file.
+name: chainome-lab
+
+services:
+  pipeline-api:
+    image: genomechain-pipeline
+    build:
+      context: ../..
+      dockerfile: packages/pipeline/docker/Dockerfile
+    entrypoint: ["/app/packages/pipeline/node_modules/.bin/tsx"]
+    command: ["src/server.ts"]
+    user: "${GC_UID:-1000}:${GC_GID:-1000}"
+    env_file: ${GC_HOME:?set GC_HOME}/pipeline.env
+    environment:
+      HOME: /tmp
+      PORT: "8080"
+      PIPELINE_DATA_DIR: /gc
+      PIPELINE_PUBLIC_URL: https://${LAB_DOMAIN:?set LAB_DOMAIN}
+      REF_GRCH38: /gc/ref/hg38.fa
+      CHAIN_37_TO_38: /gc/ref/hg19ToHg38.over.chain.gz
+      PIPELINE_THREADS: "16"
+    volumes:
+      - ${GC_HOME}:/gc
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2.10
+    ports: ["80:80", "443:443"]
+    environment:
+      LAB_DOMAIN: ${LAB_DOMAIN}
+      BEE_PROXY_TOKEN: ${BEE_PROXY_TOKEN:?export BEE_PROXY_TOKEN from pipeline.env (up.sh does this)}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+    depends_on: [pipeline-api]
+    restart: unless-stopped
+
+  # Optional local Swarm node. Testnet (Sepolia) by default; fund the address it logs with
+  # Sepolia ETH + sBZZ, buy a postage batch, put the batch ID in pipeline.env (SWARM_BATCH_ID).
+  # Skip this profile if the Swarm team gives you a gateway URL + batch instead (set BEE_URL).
+  bee:
+    profiles: ["bee"]
+    image: ethersphere/bee:2.8.1
+    command: ["start"]
+    environment:
+      BEE_API_ADDR: ":1633"
+      BEE_MAINNET: "${BEE_MAINNET:-false}"
+      BEE_NETWORK_ID: "${BEE_NETWORK_ID:-10}"
+      BEE_BOOTNODE: "${BEE_BOOTNODE:-/dnsaddr/testnet.ethswarm.org}"
+      BEE_BLOCKCHAIN_RPC_ENDPOINT: "${BEE_RPC:-https://ethereum-sepolia-rpc.publicnode.com}"
+      BEE_SWAP_ENABLE: "true"
+      BEE_FULL_NODE: "false"
+      BEE_PASSWORD_FILE: /bee/password
+    volumes:
+      - ${GC_HOME}/bee:/home/bee/.bee
+      - ${GC_HOME}/bee-password:/bee/password:ro
+    restart: unless-stopped
+
+volumes:
+  caddy-data:

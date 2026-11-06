@@ -1,0 +1,25 @@
+# TLS for the lab node (Let's Encrypt, automatic). World App webviews require HTTPS.
+{$LAB_DOMAIN} {
+	encode gzip
+
+	# Bee API for the app's server (record uploads, Swarm reads). Bearer-protected so nobody
+	# else can spend the postage batch; /bee is stripped before proxying.
+	handle_path /bee/* {
+		@authorized header Authorization "Bearer {$BEE_PROXY_TOKEN}"
+		handle @authorized {
+			reverse_proxy bee:1633
+		}
+		respond "unauthorized" 401
+	}
+
+	# Genome job service (job creation, browser uploads, status)
+	handle {
+		reverse_proxy pipeline-api:8080 {
+			# 1–2 GB genome uploads over mobile connections
+			transport http {
+				read_timeout 30m
+				write_timeout 30m
+			}
+		}
+	}
+}
