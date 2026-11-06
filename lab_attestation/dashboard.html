@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chainome Lab Attestation</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --teal: #39d0d8;
+    --teal-dim: rgba(57,208,216,0.12);
+    --green: #3fb950;
+    --red: #f85149;
+    --yellow: #d29922;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 14px;
+    background: var(--bg);
+    color: var(--text);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { min-height: 100vh; padding: 24px 16px; }
+
+  .header { text-align: center; margin-bottom: 32px; }
+  .header h1 { font-size: 22px; font-weight: 700; color: var(--teal); letter-spacing: -0.5px; }
+  .header p { color: var(--muted); margin-top: 4px; font-size: 13px; }
+
+  .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--border); margin-bottom: 24px; max-width: 640px; margin-left: auto; margin-right: auto; }
+  .tab { padding: 10px 20px; cursor: pointer; border: none; background: none; color: var(--muted); font-size: 14px; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color .15s; }
+  .tab.active { color: var(--teal); border-bottom-color: var(--teal); }
+  .tab:hover { color: var(--text); }
+
+  .panel { display: none; max-width: 640px; margin: 0 auto; }
+  .panel.active { display: block; }
+
+  .dropzone {
+    border: 2px dashed var(--border);
+    border-radius: 10px;
+    padding: 40px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .2s, background .2s;
+  }
+  .dropzone:hover, .dropzone.dragover { border-color: var(--teal); background: var(--teal-dim); }
+  .dropzone .icon { font-size: 32px; margin-bottom: 8px; }
+  .dropzone p { color: var(--muted); font-size: 13px; }
+  .dropzone strong { color: var(--text); }
+  .dropzone input[type=file] { display: none; }
+
+  .field { margin-top: 16px; }
+  .field label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+  .field input, .field textarea {
+    width: 100%; padding: 10px 12px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text); font-size: 13px; font-family: monospace;
+    outline: none; transition: border-color .15s;
+  }
+  .field input:focus, .field textarea:focus { border-color: var(--teal); }
+  .field textarea { resize: vertical; min-height: 80px; }
+
+  .btn {
+    display: inline-block; margin-top: 20px; padding: 10px 24px;
+    background: var(--teal); color: #000; font-weight: 700; font-size: 14px;
+    border: none; border-radius: 8px; cursor: pointer; transition: opacity .15s;
+  }
+  .btn:hover { opacity: .85; }
+  .btn:disabled { opacity: .4; cursor: not-allowed; }
+  .btn-secondary { background: var(--surface); border: 1px solid var(--border); color: var(--text); font-weight: 600; }
+  .btn-secondary:hover { border-color: var(--teal); }
+
+  .result {
+    margin-top: 24px; border-radius: 10px; overflow: hidden;
+    border: 1px solid var(--border); display: none;
+  }
+  .result.show { display: block; }
+  .result-header {
+    padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;
+    background: var(--surface); border-bottom: 1px solid var(--border);
+  }
+  .result-header .status { font-weight: 700; font-size: 15px; }
+  .status.ok { color: var(--green); }
+  .status.err { color: var(--red); }
+  .result pre {
+    padding: 16px; font-size: 12px; font-family: monospace; white-space: pre-wrap;
+    word-break: break-all; max-height: 400px; overflow-y: auto; background: var(--bg);
+    color: var(--text); line-height: 1.6;
+  }
+
+  .verify-row { display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-bottom: 1px solid var(--border); }
+  .verify-row:last-child { border-bottom: none; }
+  .verify-icon { font-size: 18px; width: 24px; text-align: center; }
+  .verify-label { font-weight: 600; flex: 0 0 120px; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .4px; }
+  .verify-value { font-family: monospace; font-size: 12px; color: var(--text); word-break: break-all; }
+
+  .file-info { background: var(--teal-dim); border: 1px solid var(--teal); border-radius: 6px; padding: 10px 14px; margin-top: 12px; font-size: 12px; color: var(--teal); font-family: monospace; }
+
+  .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--teal); border-radius: 50%; animation: spin .6s linear infinite; vertical-align: middle; margin-right: 6px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>Chainome Lab Attestation</h1>
+  <p>Sign and verify genome files for the demo pipeline</p>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('attest')">Sign / Attest</button>
+  <button class="tab" onclick="switchTab('verify')">Verify</button>
+</div>
+
+<!-- ATTEST TAB -->
+<div id="tab-attest" class="panel active">
+  <div class="dropzone" id="attest-drop" onclick="document.getElementById('attest-file').click()">
+    <div class="icon">🧬</div>
+    <strong>Drop VCF file here</strong>
+    <p>or click to select · .vcf / .vcf.gz supported</p>
+    <input type="file" id="attest-file" accept=".vcf,.vcf.gz,.txt" onchange="onAttestFile(this.files[0])">
+  </div>
+  <div id="attest-file-info" class="file-info" style="display:none"></div>
+
+  <div class="field">
+    <label>Patient Wallet Address</label>
+    <input type="text" id="attest-patient" placeholder="0x..." value="0x0000000000000000000000000000000000000000">
+  </div>
+
+  <button class="btn" id="attest-btn" onclick="doAttest()" disabled>
+    Sign Attestation
+  </button>
+
+  <div class="result" id="attest-result">
+    <div class="result-header">
+      <span class="status ok" id="attest-status">✓ SIGNED</span>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-secondary" style="margin:0;padding:6px 14px;font-size:12px" onclick="copyAttestation()">Copy JSON</button>
+        <button class="btn" style="margin:0;padding:6px 14px;font-size:12px" onclick="downloadAttestation()">Download .json</button>
+      </div>
+    </div>
+    <pre id="attest-output"></pre>
+  </div>
+</div>
+
+<!-- VERIFY TAB -->
+<div id="tab-verify" class="panel">
+  <div class="dropzone" id="verify-drop-vcf" onclick="document.getElementById('verify-vcf').click()" style="margin-bottom:16px">
+    <div class="icon">🧬</div>
+    <strong>Drop VCF file here</strong>
+    <p>The genome file to verify</p>
+    <input type="file" id="verify-vcf" accept=".vcf,.vcf.gz,.txt" onchange="onVerifyVcf(this.files[0])">
+  </div>
+  <div id="verify-vcf-info" class="file-info" style="display:none"></div>
+
+  <div class="dropzone" id="verify-drop-att" onclick="document.getElementById('verify-att').click()" style="margin-top:0">
+    <div class="icon">📋</div>
+    <strong>Drop attestation.json here</strong>
+    <p>The attestation JSON to check against the genome</p>
+    <input type="file" id="verify-att" accept=".json" onchange="onVerifyAtt(this.files[0])">
+  </div>
+  <div id="verify-att-info" class="file-info" style="display:none"></div>
+
+  <button class="btn" id="verify-btn" onclick="doVerify()" disabled>
+    Verify Attestation
+  </button>
+
+  <div class="result" id="verify-result">
+    <div class="result-header">
+      <span class="status" id="verify-status"></span>
+    </div>
+    <div id="verify-rows" style="background:var(--bg)"></div>
+  </div>
+</div>
+
+<script>
+let attestFile = null, attestContent = null;
+let verifyVcfContent = null, verifyAttContent = null;
+let lastAttestation = null;
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', ['attest','verify'][i] === name));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+function setupDrop(dropId, onFile) {
+  const zone = document.getElementById(dropId);
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault(); zone.classList.remove('dragover');
+    if (e.dataTransfer.files[0]) onFile(e.dataTransfer.files[0]);
+  });
+}
+setupDrop('attest-drop', onAttestFile);
+setupDrop('verify-drop-vcf', onVerifyVcf);
+setupDrop('verify-drop-att', onVerifyAtt);
+
+function readFile(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result);
+    r.onerror = rej;
+    r.readAsText(file);
+  });
+}
+
+async function onAttestFile(file) {
+  if (!file) return;
+  attestFile = file;
+  attestContent = await readFile(file);
+  document.getElementById('attest-file-info').style.display = 'block';
+  document.getElementById('attest-file-info').textContent = `📄 ${file.name}  ·  ${(file.size/1024).toFixed(1)} KB`;
+  document.getElementById('attest-btn').disabled = false;
+}
+
+async function onVerifyVcf(file) {
+  if (!file) return;
+  verifyVcfContent = await readFile(file);
+  document.getElementById('verify-vcf-info').style.display = 'block';
+  document.getElementById('verify-vcf-info').textContent = `📄 ${file.name}  ·  ${(file.size/1024).toFixed(1)} KB`;
+  checkVerifyReady();
+}
+
+async function onVerifyAtt(file) {
+  if (!file) return;
+  const text = await readFile(file);
+  try { verifyAttContent = JSON.parse(text); } catch { alert('Invalid JSON'); return; }
+  document.getElementById('verify-att-info').style.display = 'block';
+  document.getElementById('verify-att-info').textContent = `📋 ${file.name}  ·  signer: ${verifyAttContent.labSigner || '?'}`;
+  checkVerifyReady();
+}
+
+function checkVerifyReady() {
+  document.getElementById('verify-btn').disabled = !(verifyVcfContent && verifyAttContent);
+}
+
+async function doAttest() {
+  const btn = document.getElementById('attest-btn');
+  btn.innerHTML = '<span class="spinner"></span>Signing…';
+  btn.disabled = true;
+  const patient = document.getElementById('attest-patient').value.trim() || '0x0000000000000000000000000000000000000000';
+  try {
+    const r = await fetch('/attest', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ vcfContent: attestContent, patient }),
+    });
+    const data = await r.json();
+    if (!r.ok) { alert(data.error || 'Server error'); return; }
+    lastAttestation = data;
+    document.getElementById('attest-output').textContent = JSON.stringify(data, null, 2);
+    document.getElementById('attest-result').classList.add('show');
+  } catch (e) {
+    alert('Could not reach server. Is it running?\n\n' + e.message);
+  } finally {
+    btn.textContent = 'Sign Attestation';
+    btn.disabled = false;
+  }
+}
+
+async function doVerify() {
+  const btn = document.getElementById('verify-btn');
+  btn.innerHTML = '<span class="spinner"></span>Verifying…';
+  btn.disabled = true;
+  try {
+    const r = await fetch('/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ vcfContent: verifyVcfContent, attestation: verifyAttContent }),
+    });
+    const data = await r.json();
+    const ok = data.overall === 'VALID';
+    document.getElementById('verify-status').textContent = ok ? '✓ VALID' : '✗ INVALID';
+    document.getElementById('verify-status').className = 'status ' + (ok ? 'ok' : 'err');
+
+    const rows = [
+      { label: 'File Hash', pass: data.fileIntegrity?.pass, value: data.fileIntegrity?.pass ? 'Matches' : `Mismatch\nExpected: ${data.fileIntegrity?.expected}\nGot:      ${data.fileIntegrity?.computed}` },
+      { label: 'Signature', pass: data.signature?.pass, value: data.signature?.pass ? `Valid — ${data.signature?.recovered}` : `Mismatch\nClaimed:   ${data.signature?.claimed}\nRecovered: ${data.signature?.recovered}` },
+      { label: 'Freshness', pass: data.freshness?.pass, value: `${data.freshness?.ageDays}d old · ${data.freshness?.signedAt}` },
+    ];
+    document.getElementById('verify-rows').innerHTML = rows.map(row => `
+      <div class="verify-row">
+        <span class="verify-icon">${row.pass ? '✅' : '❌'}</span>
+        <span class="verify-label">${row.label}</span>
+        <span class="verify-value" style="color:${row.pass ? 'var(--green)' : 'var(--red)'}">${row.value}</span>
+      </div>
+    `).join('');
+    document.getElementById('verify-result').classList.add('show');
+  } catch (e) {
+    alert('Could not reach server. Is it running?\n\n' + e.message);
+  } finally {
+    btn.textContent = 'Verify Attestation';
+    btn.disabled = false;
+  }
+}
+
+function downloadAttestation() {
+  if (!lastAttestation) return;
+  const blob = new Blob([JSON.stringify(lastAttestation, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `attestation_${lastAttestation.timestamp}.json`;
+  a.click();
+}
+
+function copyAttestation() {
+  if (!lastAttestation) return;
+  navigator.clipboard.writeText(JSON.stringify(lastAttestation, null, 2)).then(() => {
+    const btn = event.target;
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy JSON', 1500);
+  });
+}
+</script>
+</body>
+</html>
