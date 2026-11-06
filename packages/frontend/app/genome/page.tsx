@@ -266,7 +266,7 @@ export default function GenomePage() {
 
       <button
         onClick={handleSubmit}
-        disabled={!file || uploading || isPending}
+        disabled={!file || uploading || isPending || !CONTRACTS.genomeRegistry}
         className="px-8 py-3 rounded-xl bg-genome-teal text-black font-bold text-sm hover:opacity-90 transition disabled:opacity-40"
       >
         {uploading
