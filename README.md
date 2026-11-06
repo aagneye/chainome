@@ -20,10 +20,10 @@ GenomeChain lets patients upload their medical records and genomic data, earn GN
 
 | Track | Integration |
 |-------|-------------|
-| **World** | World ID Orb verification gating genome submission. `nullifier_hash` enforces one-genome-per-human. PBH for gas subsidies. Anon RPC for IP privacy. |
-| **Arkiv** | Medical record metadata stored as owned patient entities. Consent-gated by on-chain ConsentManager. 10-year GDPR expiry. Cross-institution queryable without centralized broker. |
-| **Ethereum Foundation** | OP Stack L2 (WorldChain). All contracts EVM-standard. |
-| **Anon RPC** | Every patient transaction is broadcast through Anon RPC, so no IP address is linked to a wallet that holds medical records. |
+| **World — IDKit + Mini App** | World ID Orb gating genome submission (`nullifier_hash` = one-genome-per-human). MiniKit walletAuth + verify replace RainbowKit/IDKit — runs natively inside World App. Agent Pass gates AI health insights. |
+| **Arkiv** | Medical record metadata stored as patient-owned Arkiv entities. Consent-gated by on-chain ConsentManager. 10-year GDPR expiry. Cross-institution queryable without centralized broker. 5/5 prize files in `docs/arkiv/`. |
+| **Ethereum Foundation** | `ProtocolRegistry.sol` pre-registers clinical trial protocols on-chain before CT.gov. Detects outcome switching cryptographically. All contracts EVM-standard on WorldChain (OP Stack L2). |
+| **Anon RPC** | Every patient transaction broadcast through WorldChain Anon RPC (`wagmi.ts`). IP stripped before hitting node — breaks IP→wallet→medical record linkage. GDPR Art. 9 at transport layer. |
 
 ---
 
@@ -103,6 +103,11 @@ Network: WorldChain Sepolia (chain ID 4801) for testnet, WorldChain mainnet (cha
 - [`docs/arkiv/why-arkiv.md`](docs/arkiv/why-arkiv.md) — Arkiv prize submission
 - [`docs/arkiv/reach.md`](docs/arkiv/reach.md) — user reach and pilot plan
 - [`docs/arkiv/friction.md`](docs/arkiv/friction.md) — integration friction report
+- [`docs/arkiv/how-you-use-arkiv.md`](docs/arkiv/how-you-use-arkiv.md) — Arkiv usage walkthrough (5th prize file)
+- [`docs/anon-rpc-integration.md`](docs/anon-rpc-integration.md) — Anonymous RPC integration + threat model
+- [`docs/ens-integration.md`](docs/ens-integration.md) — ENS subname architecture for datasets
+- [`docs/idkit-integration-debrief.md`](docs/idkit-integration-debrief.md) — World IDKit debrief (prize submission)
+- [`TEAM_TRACKS.md`](TEAM_TRACKS.md) — team work split and remaining tasks
 
 ---
 

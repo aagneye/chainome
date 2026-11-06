@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
-import { CONTRACTS } from "@/lib/contracts";
+import { useMiniKitAddress } from "@/hooks/useMiniKitAddress";
+import { MiniKit } from "@worldcoin/minikit-js";
+import { CONTRACTS, RECORD_VAULT_ABI } from "@/lib/contracts";
 
 const RECORD_TYPES = ["Lab Report", "Prescription", "Imaging", "Vaccination", "Clinical Notes", "Other"];
 
 export default function RecordsPage() {
-  const { address } = useAccount();
+  const address = useMiniKitAddress();
   const [file, setFile] = useState<File | null>(null);
   const [recordType, setRecordType] = useState(RECORD_TYPES[0]);
   const [uploading, setUploading] = useState(false);
@@ -15,8 +16,8 @@ export default function RecordsPage() {
   const [cid, setCid] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const { writeContract, data: txHash, isPending } = useWriteContract();
-  const { isSuccess } = useWaitForTransactionReceipt({ hash: txHash });
+  const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   const onDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -64,20 +65,26 @@ export default function RecordsPage() {
         }),
       }).catch((e) => console.warn("[arkiv-record] background write failed", e));
 
-      writeContract({
-        address: CONTRACTS.recordVault.address as `0x${string}`,
-        abi: CONTRACTS.recordVault.abi,
-        functionName: "addRecord",
-        args: [ipfsCid, recordType],
+      setLoading(true);
+      const { finalPayload } = await MiniKit.commandsAsync.sendTransaction({
+        transaction: [{
+          address: CONTRACTS.recordVault as `0x${string}`,
+          abi: RECORD_VAULT_ABI,
+          functionName: "addRecord",
+          args: [ipfsCid, recordType],
+        }],
       });
+      if (finalPayload.status === "error") throw new Error(finalPayload.error_code);
+      setSubmitted(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
     } finally {
       setUploading(false);
+      setLoading(false);
     }
   }
 
-  if (isSuccess) {
+  if (submitted) {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center gap-6 px-4">
         <div className="animate-slide-up text-center">
@@ -93,7 +100,7 @@ export default function RecordsPage() {
           <p className="text-xs text-gray-500 mt-1">+10 GNM tokens minted to your wallet</p>
         </div>
         <button
-          onClick={() => { setFile(null); setUploadPct(0); setCid(null); }}
+          onClick={() => { setFile(null); setUploadPct(0); setCid(null); setSubmitted(false); }}
           className="px-6 py-3 rounded-lg border border-genome-border text-gray-300 hover:border-genome-teal transition"
         >
           Add Another Record
@@ -190,11 +197,11 @@ export default function RecordsPage() {
 
         <button
           onClick={handleSubmit}
-          disabled={!file || uploading || isPending}
+          disabled={!file || uploading || loading}
           className="w-full px-6 py-3 rounded-lg bg-genome-teal text-black font-semibold
                      hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-40"
         >
-          {uploading ? "Uploading…" : isPending ? "Confirming tx…" : "Store Record"}
+          {uploading ? "Uploading…" : loading ? "Confirming tx…" : "Store Record"}
         </button>
       </div>
 

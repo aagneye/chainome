@@ -1,9 +1,9 @@
 "use client";
 
-import { useAccount, useReadContract, useBalance } from "wagmi";
+import { useReadContract, useBalance } from "wagmi";
 import { useRouter } from "next/navigation";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { CONTRACTS, RECORD_VAULT_ABI } from "@/lib/contracts";
+import { useMiniKitAddress } from "@/hooks/useMiniKitAddress";
 import Link from "next/link";
 import Skeleton from "@/components/Skeleton";
 
@@ -85,7 +85,8 @@ const NAV_LINKS = [
 ];
 
 export default function DashboardPage() {
-  const { address, isConnected } = useAccount();
+  const address = useMiniKitAddress();
+  const isConnected = !!address;
   const router = useRouter();
 
   const { data: gnmBalance, isLoading: balanceLoading } = useBalance({
@@ -109,8 +110,7 @@ export default function DashboardPage() {
   if (!isConnected) {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center gap-4 px-4">
-        <p className="text-gray-400">Connect wallet to view dashboard</p>
-        <ConnectButton />
+        <p className="text-gray-400">Open in World App to view dashboard</p>
       </main>
     );
   }

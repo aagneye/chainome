@@ -1,5 +1,5 @@
-import { getDefaultConfig } from "@rainbow-me/rainbowkit";
-import { defineChain, http, fallback } from "viem";
+import { createConfig, http, fallback } from "wagmi";
+import { defineChain } from "viem";
 
 // WorldChain Sepolia Anon RPC — strips IP from tx broadcast (privacy for medical data)
 const ANON_RPC = "https://anon-rpc.worldchain-sepolia.g.alchemy.com/public";
@@ -34,9 +34,8 @@ export const worldChain = defineChain({
 
 const isDev = process.env.NODE_ENV === "development";
 
-export const wagmiConfig = getDefaultConfig({
-  appName: "GenomeChain",
-  projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ?? "",
+// ponytail: no connectors — MiniKit owns wallet auth; wagmi is read-only here
+export const wagmiConfig = createConfig({
   chains: isDev ? [worldChainSepolia] : [worldChain, worldChainSepolia],
   transports: {
     [worldChainSepolia.id]: fallback([http(ANON_RPC), http(PUBLIC_RPC)]),
