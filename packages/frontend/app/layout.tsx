@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
+import dynamic from "next/dynamic";
 import { Providers } from "./providers";
 import { Nav } from "@/components/Nav";
 import NoContractBanner from "@/components/NoContractBanner";
 import "./globals.css";
+
+const MiniKitProvider = dynamic(() => import("@/components/MiniKitProvider"), { ssr: false });
 
 export const metadata: Metadata = {
   title: "GenomeChain",
@@ -14,9 +17,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className="pt-14">
         <Providers>
-          <Nav />
-          <NoContractBanner />
-          {children}
+          <MiniKitProvider>
+            <Nav />
+            <NoContractBanner />
+            {children}
+          </MiniKitProvider>
         </Providers>
       </body>
     </html>
