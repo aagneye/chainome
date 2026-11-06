@@ -24,7 +24,7 @@ function describeSchema(s: unknown): { name?: string; columns: Record<string, { 
 }
 
 describe("Arkiv schemas", () => {
-  it.each(Object.entries(SCHEMAS))("%s is named under the genomechain prefix", (_n, schema) => {
+  it.each(Object.entries(SCHEMAS))("%s is named under the project schema prefix", (_n, schema) => {
     const { name } = describeSchema(schema);
     expect(name).toMatch(new RegExp(`^${SCHEMA_PREFIX}\\.[a-z_]+$`));
   });

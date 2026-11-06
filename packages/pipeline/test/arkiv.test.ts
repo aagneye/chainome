@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { GenomeManifest } from "@genomechain/shared/manifest";
+import type { GenomeManifest } from "@chainome/shared/manifest";
 
 const createEntity = vi.fn();
 const executeBatch = vi.fn();
@@ -11,7 +11,7 @@ vi.mock("@arkiv-network/sdk", async (orig) => ({
 
 process.env.ARKIV_PRIVATE_KEY = "0x" + "11".repeat(32);
 const { writeGenome } = await import("../src/arkiv");
-const { GenomeDataset, GenomeFeatures, GenomeSegment } = await import("@genomechain/shared/arkiv");
+const { GenomeDataset, GenomeFeatures, GenomeSegment } = await import("@chainome/shared/arkiv");
 
 const key = (n: number) => `0x${n.toString(16).padStart(64, "0")}` as const;
 const wrapped = { epk: "aa", iv: "bb", ct: "cc" };

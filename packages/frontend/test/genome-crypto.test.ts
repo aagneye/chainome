@@ -3,8 +3,8 @@ import { mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { bytesToHex, keyPairFromSignature, newDataKey, sealForRecipient, wrapKey } from "@genomechain/shared/keys";
-import type { GenomeManifest } from "@genomechain/shared/manifest";
+import { bytesToHex, keyPairFromSignature, newDataKey, sealForRecipient, wrapKey } from "@chainome/shared/keys";
+import type { GenomeManifest } from "@chainome/shared/manifest";
 import {
   downloadAndDecrypt,
   encryptForPatient,
@@ -108,10 +108,10 @@ describe("downloadAndDecrypt failures", () => {
     await expect(downloadAndDecrypt(m, "chr1", patient)).rejects.toThrow();
   });
 
-  it("rejects a non-GenomeChain payload", async () => {
+  it("rejects a non-Chainome payload", async () => {
     const { ref, m } = await setup();
     serve({ [ref]: new TextEncoder().encode("plain text pretending to be a segment") });
-    await expect(downloadAndDecrypt(m, "chr1", patient)).rejects.toThrow(/Not a GenomeChain segment/);
+    await expect(downloadAndDecrypt(m, "chr1", patient)).rejects.toThrow(/Not a Chainome segment/);
   });
 
   it("reports Swarm errors and unknown chromosomes", async () => {

@@ -3,7 +3,7 @@ import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
-import { SEGMENT_HEADER_BYTES, SEGMENT_MAGIC } from "@genomechain/shared/manifest";
+import { SEGMENT_HEADER_BYTES, SEGMENT_MAGIC } from "@chainome/shared/manifest";
 import { encryptFile } from "../src/encrypt";
 
 let dir: string;

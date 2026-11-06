@@ -47,11 +47,11 @@ describe("getGenomeForPatient", () => {
   });
 
   it("picks the latest dataset and maps segments and sealed features to plain JSON", async () => {
-    results.set("genomechain.genome_dataset", [dataset(OLD, BigInt(100)), dataset(NEW, BigInt(200))]);
-    results.set("genomechain.genome_segment", [
+    results.set("chainome.genome_dataset", [dataset(OLD, BigInt(100)), dataset(NEW, BigInt(200))]);
+    results.set("chainome.genome_segment", [
       { $key: K(3), chrom: v("chr1"), variantCount: v(BigInt(323430)), cipherBytes: v(BigInt(5315954)), swarmRef: v("ab".repeat(32)), sha256Cipher: v("c"), sha256Plain: v("p") },
     ]);
-    results.set("genomechain.genome_features", [{ summary: v(stringToHex('{"iv":"00"}')) }]);
+    results.set("chainome.genome_features", [{ summary: v(stringToHex('{"iv":"00"}')) }]);
 
     const g = await getGenomeForPatient("0x000000000000000000000000000000000000dEaD");
     expect(g!.dataset).toMatchObject({ key: NEW, variantCount: "4096123", segmentCount: 22, qcPass: true, hasRefCalls: false, expiresAtBlock: "200" });
@@ -61,15 +61,15 @@ describe("getGenomeForPatient", () => {
   });
 
   it("queries segments of that dataset, sorted by chromosome order", async () => {
-    results.set("genomechain.genome_dataset", [dataset(NEW, BigInt(200))]);
+    results.set("chainome.genome_dataset", [dataset(NEW, BigInt(200))]);
     await getGenomeForPatient("0x000000000000000000000000000000000000dEaD");
-    const seg = calls.find((c) => c.schema === "genomechain.genome_segment")!;
+    const seg = calls.find((c) => c.schema === "chainome.genome_segment")!;
     expect(JSON.stringify(seg.where)).toContain("dataset");
     expect(JSON.stringify(seg.orderBy)).toContain("chromOrder");
   });
 
   it("returns features: null when the features entity is missing", async () => {
-    results.set("genomechain.genome_dataset", [dataset(NEW, BigInt(200))]);
+    results.set("chainome.genome_dataset", [dataset(NEW, BigInt(200))]);
     expect((await getGenomeForPatient("0x000000000000000000000000000000000000dEaD"))!.features).toBeNull();
   });
 });

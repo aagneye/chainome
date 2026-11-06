@@ -37,10 +37,12 @@ describe("keyPairFromSignature", () => {
 
   it("pins the derivation output so a silent change can't orphan existing data", () => {
     // If this changes, every patient's existing genome becomes undecryptable.
+    // Re-pinned 2026-11-06 for the GenomeChain → Chainome rename (HKDF info "chainome/x25519/v1"),
+    // before any real genome was stored. Never change it again once data exists.
     expect(bytesToHex(keyPairFromSignature(SIG_A).publicKey)).toBe(
-      "2432540b335116d3c723c51ffbbdb731609ce646e4722dc653f77742cfcbcd5d",
+      "2fc5625d130f201057e1229b9e96e57546df8109adc40d57864c022e5467ac51",
     );
-    expect(KEY_DERIVATION_MESSAGE.startsWith("GenomeChain encryption key v1")).toBe(true);
+    expect(KEY_DERIVATION_MESSAGE.startsWith("Chainome encryption key v1")).toBe(true);
   });
 });
 
