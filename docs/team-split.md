@@ -3,6 +3,8 @@
 Snapshot of `dev` = `master` at `af58c99` (2026-11-06, after PRs #9 and #10).
 Supersedes the track list in `TEAM_TRACKS.md` (Tracks B and C there are merged).
 
+**Prize tracks we are entering:** World, Arkiv, Ethereum Foundation, Anon RPC. 0G, ENS and Definitive are dropped; 0G code was removed.
+
 ---
 
 ## 1. What is built
@@ -16,9 +18,9 @@ Supersedes the track list in `TEAM_TRACKS.md` (Tracks B and C there are merged).
 | File upload | Lighthouse upload on `/genome` and `/records` | **Uploaded unencrypted to public IPFS**; Lighthouse key exposed as `NEXT_PUBLIC_` |
 | Lab attestation | `/api/lab-attest` | Stub unless `LAB_PRIVATE_KEY` set |
 | Arkiv | `/api/arkiv-record` | Stub; real path uses an unverified API-key call, server (not patient) would own entity, reads are public |
-| 0G | `/api/health-insights` | Stub (deterministic fake scores) |
+| Insights | `/api/health-insights` | Labelled demo scores (0G removed) |
 | Studies | `/studies` page, `joinStudy` write | List is `MOCK_STUDIES`, not read from chain |
-| Datasets / ENS | `/datasets`, `publishDataset`, `purchaseAccess` | List is `MOCK_DATASETS`; ENS name is a label only, no on-chain subname |
+| Datasets | `/datasets`, `publishDataset`, `purchaseAccess` | List is `MOCK_DATASETS`; not tied to a prize track now |
 | Publication | `/publication` | Mock JSON, simulated tx |
 | Anon RPC | Mentioned in README | Not in code |
 
@@ -36,10 +38,10 @@ Tests and the frontend build were **not run** in this audit (no `node_modules`, 
 
 **P1 — required for sponsor prizes**
 5. Arkiv: real SDK write signed by patient wallet, public/encrypted field split, honest `friction.md`.
-6. Agent Pass: verify proof in `/api/health-insights`.
-7. 0G: real Private Computer call (or clearly labelled stub in the demo).
-8. ENS: real subname for each dataset.
-9. Lab attestation signed by a real lab key.
+6. Anon RPC: all patient transactions sent through WorldChain Anon RPC (wagmi transport), shown in the demo.
+7. World: Agent Pass proof verified in `/api/health-insights`; staging app_id + actions.
+8. Lab attestation signed by a real lab key.
+9. Ethereum Foundation: write-up of why this needs Ethereum (public verifiability, consent audit trail).
 
 **P2 — polish**
 10. Publication page writes a real hash to ProtocolRegistry.
@@ -53,7 +55,7 @@ Tests and the frontend build were **not run** in this audit (no `node_modules`, 
 Each person owns **different files**, so all three can work locally in parallel with no merge conflicts.
 Shared files (`lib/contracts.ts`, `.env.example`, `Nav.tsx`) are edited **only by the listed owner**; others request changes.
 
-### Abhimanyu — Chain layer (contracts, deploy, lab, World ID config)
+### Abhimanyu — Chain layer (contracts, deploy, lab, World ID config, EF)
 
 Owns: `packages/contracts/**`, `packages/frontend/lib/contracts.ts`, `api/lab-attest/`, `.env.example`, README addresses.
 
@@ -62,12 +64,12 @@ Owns: `packages/contracts/**`, `packages/frontend/lib/contracts.ts`, `api/lab-at
 3. Run all tests green; deploy to WorldChain Sepolia; push addresses.
 4. Create the World ID staging app + actions (`genome_submission`, `request_health_insights`); share app_id.
 5. Real lab attestation in `/api/lab-attest` with a demo lab key.
-6. ENS (contract side): subname per dataset — Durin L2 subnames or an offchain resolver; record what was actually done in `docs/ens-integration.md`.
-7. Final: ETHGlobal submission form, prize tags.
+6. Ethereum Foundation write-up in `docs/` (what is on-chain and why).
+7. Final: ETHGlobal submission form, prize tags (World, Arkiv, EF, Anon RPC).
 
-### Atul — Privacy + data layer (encryption, storage, Arkiv)
+### Atul — Privacy + data layer (encryption, storage, Arkiv, Anon RPC)
 
-Owns: new `packages/frontend/lib/crypto.ts`, `lib/storage.ts`, `lib/arkiv.ts`, `app/api/upload/`, `app/api/arkiv-record/`, `docs/arkiv/**`, `app/records/page.tsx`, `app/genome/page.tsx` (upload part only).
+Owns: new `packages/frontend/lib/crypto.ts`, `lib/storage.ts`, `lib/arkiv.ts`, `lib/wagmi.ts`, `app/api/upload/`, `app/api/arkiv-record/`, `docs/arkiv/**`, `app/records/page.tsx`, `app/genome/page.tsx` (upload part only).
 
 1. `lib/crypto.ts`: AES-256-GCM in the browser (WebCrypto); key derived from a wallet signature so the patient can re-derive it.
 2. `lib/storage.ts` + `/api/upload`: encrypted upload to Lighthouse with the key server-side; `downloadDecrypted(cid)`.
@@ -75,18 +77,18 @@ Owns: new `packages/frontend/lib/crypto.ts`, `lib/storage.ts`, `lib/arkiv.ts`, `
 4. Arkiv: `@arkiv-network/sdk`, entity written **by the patient wallet**, only coarse fields public (type, ICD-10 group, year, hasGenome), the rest encrypted; per-study pseudonym instead of shared `anonymousId`; `expiresIn` 10 years.
 5. `lib/arkiv.ts`: `writeRecordIndex()`, `queryCohort(filters)`; give aagneye `queryCohort` for the studies page.
 6. Rewrite `docs/arkiv/friction.md` + `schema.md` to match what was actually built (remove claims about load tests and `/api/arkiv/query`).
-7. Synthetic demo VCF / SNP file + 2 fake lab reports in `demo-data/` (never real genomes).
+7. Anon RPC: point the wagmi WorldChain transport at Anon RPC; confirm every write in the golden path uses it; short `docs/anon-rpc.md` for the prize.
+8. Synthetic demo VCF / SNP file + 2 fake lab reports in `demo-data/` (never real genomes).
 
-### aagneye — App layer + AI (pages, Agent Pass, 0G, demo)
+### aagneye — App layer (pages, Agent Pass, demo)
 
 Owns: `app/studies/`, `app/datasets/`, `app/dashboard/`, `app/publication/`, `app/insights/`, `app/api/health-insights/`, `app/consent/`, `components/**`.
 
 1. `/studies`, `/datasets`, `/dashboard`: replace `MOCK_*` with `useReadContract` reads (study list, participants, dataset list, `hasAccess`, GNM balance).
 2. `/publication`: hash result JSON, real `ProtocolRegistry` write, show tx link.
 3. Agent Pass: send proof to `/api/health-insights`, verify with World's verify API before returning data.
-4. 0G: real Private Computer call in `/api/health-insights`; keep stub as labelled fallback.
-5. Studies page: show matched-cohort count from Atul's `queryCohort()` (mock until ready).
-6. Golden-path walkthrough, fix broken steps, record the 2–4 min demo video + slides.
+4. Studies page: show matched-cohort count from Atul's `queryCohort()` (mock until ready).
+5. Golden-path walkthrough, fix broken steps, record the 2–4 min demo video + slides.
 
 ---
 
@@ -107,7 +109,7 @@ Owns: `app/studies/`, `app/datasets/`, `app/dashboard/`, `app/publication/`, `ap
 1. **Checkpoint 1 — localhost:** Abhimanyu's localhost deploy + seed merged. Everyone points `.env.local` at it.
 2. **Checkpoint 2 — feature PRs:** each person opens one PR into `dev` from `feat/<area>`. Merge order: Abhimanyu → Atul → aagneye (pages depend on addresses and `lib/storage`).
 3. **Checkpoint 3 — Sepolia:** Abhimanyu deploys + seeds on WorldChain Sepolia, updates env. All three run the golden path together:
-   `/` connect → `/verify` World ID → `/genome` encrypted upload → lab attest → `submitGenome` → `/dashboard` GNM → `/records` → `/consent` → `/studies` join → `/insights` Agent Pass + 0G → `/datasets` → `/publication`.
+   `/` connect → `/verify` World ID → `/genome` encrypted upload → lab attest → `submitGenome` → `/dashboard` GNM → `/records` → `/consent` → `/studies` join → `/insights` Agent Pass → `/datasets` → `/publication`.
 4. **Freeze:** `dev` → `master`, record demo, submit.
 
 Rules: branch from `dev`, Conventional Commits, PR into `dev`, never commit `.env` or private keys, use only synthetic genome data.
