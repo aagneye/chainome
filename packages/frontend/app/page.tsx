@@ -32,16 +32,13 @@ export default function Home() {
         return;
       }
       const nonce = crypto.randomUUID().replace(/-/g, "");
-      const { finalPayload } = await MiniKit.commandsAsync.walletAuth({
+      // MiniKit v2: commands are async methods on MiniKit and throw on error.
+      const { data } = await MiniKit.walletAuth({
         nonce,
         expirationTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         statement: "Sign in to GenomeChain — patient-sovereign data marketplace",
       });
-      if (finalPayload.status === "error") {
-        setError("Sign in failed. Try again.");
-        return;
-      }
-      sessionStorage.setItem("minikit_address", finalPayload.address);
+      sessionStorage.setItem("minikit_address", data.address);
       sessionStorage.setItem("minikit_signed_in", "true");
       router.push("/verify");
     } catch (e) {
