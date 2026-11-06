@@ -34,8 +34,17 @@ export default function VerifyPage() {
   }
 
   if (!address) {
-    router.push("/");
-    return null;
+    return (
+      <main className="min-h-screen flex flex-col items-center justify-center gap-6 px-4 text-center">
+        <p className="text-gray-400">Session expired. Please sign in again.</p>
+        <button
+          onClick={() => router.push("/")}
+          className="px-5 py-2 rounded-lg bg-genome-teal text-black font-semibold"
+        >
+          Back to Sign In
+        </button>
+      </main>
+    );
   }
 
   if (status === "success") {
@@ -91,11 +100,11 @@ export default function VerifyPage() {
         </div>
         <h2 className="text-2xl font-bold text-genome-teal mb-2">Verify with World ID</h2>
         <p className="text-gray-400 text-sm leading-relaxed">
-          Orb verification proves you&apos;re a unique human.
-          Your iris is never stored — only a zero-knowledge proof.
+          Verify you&apos;re a unique human with World ID.
+          Only a zero-knowledge proof is used — no biometric data stored.
         </p>
         <p className="text-xs text-gray-600 mt-2">
-          Orb verification · biometric · prevents duplicate genome submissions
+          Device verification · prevents duplicate genome submissions
         </p>
       </div>
 
@@ -105,7 +114,7 @@ export default function VerifyPage() {
         signal={address}
         onSuccess={onSuccess}
         onError={onError}
-        verification_level={VerificationLevel.Orb}
+        verification_level={VerificationLevel.Device}
       >
         {({ open }: { open: () => void }) => (
           <div className="flex flex-col items-center gap-3">

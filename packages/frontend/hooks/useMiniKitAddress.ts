@@ -6,7 +6,7 @@ import { isAddress } from "viem";
 function readAddress(): `0x${string}` | undefined {
   if (typeof window === "undefined") return undefined;
   try {
-    const stored = sessionStorage.getItem("minikit_address");
+    const stored = localStorage.getItem("minikit_address");
     if (stored && isAddress(stored)) return stored as `0x${string}`;
   } catch {}
   return undefined;

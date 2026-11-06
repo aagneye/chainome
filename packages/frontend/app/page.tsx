@@ -38,8 +38,8 @@ export default function Home() {
         expirationTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         statement: "Sign in to Chainome — patient-sovereign data marketplace",
       });
-      sessionStorage.setItem("minikit_address", data.address);
-      sessionStorage.setItem("minikit_signed_in", "true");
+      localStorage.setItem("minikit_address", data.address);
+      localStorage.setItem("minikit_signed_in", "true");
       router.push("/verify");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Sign in failed");
