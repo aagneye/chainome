@@ -3,8 +3,11 @@
 import { useState, useEffect } from "react";
 import { useAccount, useReadContract } from "wagmi";
 import { useRouter } from "next/navigation";
+import { IDKitWidget, VerificationLevel } from "@worldcoin/idkit";
 import { CONTRACTS } from "@/lib/contracts";
 import Skeleton from "@/components/Skeleton";
+
+const APP_ID = process.env.NEXT_PUBLIC_WLD_APP_ID as `app_${string}`;
 
 interface RiskScore {
   condition: string;
@@ -54,6 +57,7 @@ export default function InsightsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [agentPassVerified, setAgentPassVerified] = useState(false);
 
   // Trigger progress bar transitions after mount
   useEffect(() => { setMounted(true); }, []);
@@ -101,8 +105,8 @@ export default function InsightsPage() {
   }
 
   useEffect(() => {
-    if (genomeCID) fetchInsights();
-  }, [genomeCID]);
+    if (genomeCID && agentPassVerified) fetchInsights();
+  }, [genomeCID, agentPassVerified]);
 
   if (!address) {
     router.push("/");
@@ -136,8 +140,46 @@ export default function InsightsPage() {
         </div>
       )}
 
+      {/* Agent Pass gate */}
+      {genomeCID && !agentPassVerified && (
+        <div className="animate-fade-in p-6 rounded-xl bg-genome-card border border-genome-border text-center">
+          <div className="mx-auto mb-4 w-14 h-14 rounded-full bg-genome-violet/20 border border-genome-violet/40 flex items-center justify-center">
+            <svg className="w-7 h-7 text-genome-violet" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.955 11.955 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-semibold text-genome-violet mb-2">Agent Pass Required</h3>
+          <p className="text-gray-400 text-sm leading-relaxed mb-5 max-w-xs mx-auto">
+            AI-generated health insights require World ID Agent Pass verification.
+            This prevents AI interpretations from being attributed to unverified actors.
+          </p>
+          <IDKitWidget
+            app_id={APP_ID}
+            action="request_health_insights"
+            signal={address ?? ""}
+            onSuccess={(result) => {
+              sessionStorage.setItem("agent_pass_proof", JSON.stringify(result));
+              setAgentPassVerified(true);
+            }}
+            verification_level={VerificationLevel.Device}
+          >
+            {({ open }) => (
+              <button
+                onClick={open}
+                className="px-5 py-2.5 rounded-lg bg-genome-violet text-white font-semibold hover:opacity-90 transition shadow-[0_0_20px_rgba(139,92,246,0.3)]"
+              >
+                Unlock with Agent Pass
+              </button>
+            )}
+          </IDKitWidget>
+          <p className="text-xs text-gray-600 mt-4">
+            Uses Device verification — no Orb required · Proof expires per session
+          </p>
+        </div>
+      )}
+
       {/* Loading skeleton */}
-      {genomeCID && loading && (
+      {genomeCID && agentPassVerified && loading && (
         <div className="animate-fade-in space-y-8">
           <section>
             <Skeleton className="h-4 w-40 mb-4" />
