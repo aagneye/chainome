@@ -1,6 +1,6 @@
 # GenomeChain — Team Work Split
 
-ETHGlobal Mumbai 2026 · 3 tracks, parallel, independent.
+ETHGlobal Mumbai 2026 · 4 tracks, parallel, independent.
 
 ---
 
@@ -36,67 +36,11 @@ ETHGlobal Mumbai 2026 · 3 tracks, parallel, independent.
 6. Update `README.md` contract addresses table with deployed addresses, commit + push
 7. Submit project on ETHGlobal: https://ethglobal.com/events/mumbai
    - Link GitHub repo
-   - Tag prize tracks: **World** (Best Use of IDKit), **Arkiv** (Build on Arkiv), **0G** (Private Computer), **EF** (ProtocolRegistry)
+   - Tag prize tracks: **World** (Best Use of IDKit), **Arkiv** (Build on Arkiv), **Ethereum Foundation**, **Anon RPC**
    - Add demo video / screenshots
 
 ### Deploy order (handled by deploy.ts automatically)
 HealthToken → LabRegistry → LabAttestation → GenomeRegistry → RecordVault → ConsentManager → ProtocolRegistry → StudyRegistry
-
----
-
-## Track B — ENS + Definitive Dataset Marketplace
-**Owner:** Teammate 1
-
-Prize targets: **ENS** ($10k) + **Definitive** ($5k)
-
-### What to build
-
-#### `packages/contracts/contracts/DatasetRegistry.sol`
-- Anyone uploads a dataset (CID + name + description + category)
-- Contract deploys a unique ERC-20 token per dataset (or mints from a factory)
-- Dataset name registered as ENS subname: `<slug>.genomechain.eth`
-- Token holders can access the dataset CID (gated download)
-
-```solidity
-struct Dataset {
-    uint256 id;
-    address creator;
-    string  name;        // "brca2-india-cohort"
-    string  slug;        // used for ENS: brca2-india-cohort.genomechain.eth
-    string  cid;         // IPFS CID of encrypted dataset
-    string  description;
-    string  category;    // "genomics" | "imaging" | "clinical"
-    address tokenAddress;// ERC-20 for this dataset
-    uint256 price;       // in GNM to buy 1 dataset token
-    uint256 createdAt;
-}
-```
-
-#### ENS Integration
-- Register `genomechain.eth` as parent domain (or use a testnet subdomain)
-- Each dataset publish registers `<slug>.genomechain.eth` → dataset token address
-- Use ENS `setSubnodeRecord` on the PublicResolver
-- Docs: https://docs.ens.domains/contract-api-reference/name-processing
-
-#### Definitive DEX Integration
-- Dataset tokens are standard ERC-20 — tradeable on Definitive out of the box
-- Add a "Trade on Definitive" link on each dataset card
-- Docs: https://docs.definitive.fi
-
-#### `packages/frontend/app/datasets/page.tsx`
-- Browse datasets by category
-- Each card: name (ENS slug), description, creator, price in GNM, token supply
-- "Buy Access" button — transfers GNM, receives dataset token
-- "Publish Dataset" flow — drag-drop file → IPFS → register on-chain → ENS subname minted
-
-#### Test file: `packages/contracts/test/DatasetRegistry.test.ts`
-- publishDataset stores fields correctly
-- each dataset gets unique token address
-- token minted to creator on publish
-- buyer receives token after purchase
-
-### Branch suggestion
-Work on `feat/dataset-marketplace` branch, PR to master when done.
 
 ---
 
@@ -184,3 +128,19 @@ cd packages/frontend && pnpm dev            # start dev server on :3000
 | StudyRegistry.sol | Research study marketplace |
 
 All tests passing. Deploy script ready. Waiting on PRIVATE_KEY.
+
+---
+
+## Track D — EF Anon-RPC
+**Owner:** Atul
+
+Built in `feat/anon-rpc`. All chain reads go through EF Anon-RPC (`@anon-rpc/browser-harness`) over the Nox mixnet by default, with no direct-RPC fallback. Nym is a backup network in the badge.
+
+- `packages/frontend/lib/anonRpc.ts` — worker, batching, per-wallet isolation, counters
+- `packages/frontend/lib/wagmi.ts` — WorldChain transports are `anonTransport(url)`
+- `packages/frontend/components/AnonRpcStatus.tsx` — status badge with live check
+- `docs/anon-rpc-integration.md` — submission doc: design, measurements, disclosed exclusions, threat model
+
+Prize: Ethereum Foundation "Best Use of Anon-RPC" (one EF prize per project). Requirement: reads through Anon-RPC by default.
+
+Still to do: test inside the World App webview; record the demo.

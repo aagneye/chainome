@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { usePathname } from "next/navigation";
+import { useMiniKitAddress } from "@/hooks/useMiniKitAddress";
 
 const links = [
   { href: "/dashboard", label: "Dashboard" },
@@ -10,11 +10,11 @@ const links = [
   { href: "/records",   label: "Records" },
   { href: "/consent",   label: "Consent" },
   { href: "/studies",   label: "Studies" },
-  { href: "/datasets",  label: "Datasets" },
 ];
 
 export function Nav() {
   const pathname = usePathname();
+  const address = useMiniKitAddress();
 
   return (
     <nav className="fixed top-0 inset-x-0 z-50 border-b border-genome-border bg-genome-navy/80 backdrop-blur">
@@ -31,9 +31,11 @@ export function Nav() {
             {label}
           </Link>
         ))}
-        <div className="ml-auto">
-          <ConnectButton showBalance={false} chainStatus="none" />
-        </div>
+        {address && (
+          <div className="ml-auto text-xs text-gray-400 font-mono">
+            {address.slice(0, 6)}…{address.slice(-4)}
+          </div>
+        )}
       </div>
     </nav>
   );

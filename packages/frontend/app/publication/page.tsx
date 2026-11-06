@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import { useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import { useMiniKitAddress } from "@/hooks/useMiniKitAddress";
 import { keccak256, toBytes } from "viem";
 
 /**
@@ -30,7 +31,7 @@ const MOCK_STUDY = {
 };
 
 export default function PublicationPage() {
-  const { address } = useAccount();
+  const address = useMiniKitAddress();
   const [published, setPublished] = useState(false);
   const [resultsHash, setResultsHash] = useState<string | null>(null);
 

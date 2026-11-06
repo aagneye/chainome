@@ -1,18 +1,18 @@
-import { getDefaultConfig } from "@rainbow-me/rainbowkit";
-import { defineChain, http, fallback } from "viem";
+import { createConfig } from "wagmi";
+import { defineChain } from "viem";
+import { anonTransport } from "./anonRpc";
 
-// WorldChain Sepolia Anon RPC — strips IP from tx broadcast (privacy for medical data)
-const ANON_RPC = "https://anon-rpc.worldchain-sepolia.g.alchemy.com/public";
-// Fall back to public RPC if anon not available
-const PUBLIC_RPC = process.env.NEXT_PUBLIC_WORLDCHAIN_RPC ?? "https://worldchain-sepolia.g.alchemy.com/public";
+// RPC endpoints. Every request to them goes through Anon-RPC (see lib/anonRpc.ts),
+// so the provider sees a mixnet exit, never the patient's IP.
+const SEPOLIA_RPC = process.env.NEXT_PUBLIC_WORLDCHAIN_RPC ?? "https://worldchain-sepolia.g.alchemy.com/public";
+const MAINNET_RPC = process.env.NEXT_PUBLIC_WORLDCHAIN_MAINNET_RPC ?? "https://worldchain-mainnet.g.alchemy.com/public";
 
 export const worldChainSepolia = defineChain({
   id: 4801,
   name: "World Chain Sepolia",
   nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
   rpcUrls: {
-    default: { http: [ANON_RPC] },
-    public:  { http: [PUBLIC_RPC] },
+    default: { http: [SEPOLIA_RPC] },
   },
   blockExplorers: {
     default: { name: "Blockscout", url: "https://worldchain-sepolia.explorer.alchemy.com" },
@@ -25,7 +25,7 @@ export const worldChain = defineChain({
   name: "World Chain",
   nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
   rpcUrls: {
-    default: { http: ["https://worldchain-mainnet.g.alchemy.com/public"] },
+    default: { http: [MAINNET_RPC] },
   },
   blockExplorers: {
     default: { name: "Blockscout", url: "https://worldchain-mainnet.explorer.alchemy.com" },
@@ -34,13 +34,13 @@ export const worldChain = defineChain({
 
 const isDev = process.env.NODE_ENV === "development";
 
-export const wagmiConfig = getDefaultConfig({
-  appName: "GenomeChain",
-  projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ?? "",
+// ponytail: no connectors — MiniKit owns wallet auth; wagmi is read-only here
+export const wagmiConfig = createConfig({
   chains: isDev ? [worldChainSepolia] : [worldChain, worldChainSepolia],
+  // No direct-RPC fallback: if Anon-RPC is down, reads fail visibly instead of leaking the IP.
   transports: {
-    [worldChainSepolia.id]: fallback([http(ANON_RPC), http(PUBLIC_RPC)]),
-    [worldChain.id]: http("https://worldchain-mainnet.g.alchemy.com/public"),
+    [worldChainSepolia.id]: anonTransport(SEPOLIA_RPC),
+    [worldChain.id]: anonTransport(MAINNET_RPC),
   },
   ssr: true,
 });

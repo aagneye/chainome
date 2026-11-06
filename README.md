@@ -15,7 +15,7 @@ GenomeChain lets patients store their whole genome and medical records, earn GNM
 
 **Two layers:**
 - **Consumer app:** genomes via the lab pipeline; bills, scans, prescriptions and lab reports encrypted in the browser → earn GNM. All transactions go through Anon RPC (no IP→wallet linkage). The index lives in Arkiv: public pointers and hashes, with health findings sealed to the patient.
-- **Research marketplace:** Pharma publishes studies on-chain (StudyRegistry). Patients browse and consent. Institutions query Arkiv for matched cohorts. AI inference runs in 0G Private Computer (TEE) — only aggregate outputs returned.
+- **Research marketplace:** Pharma publishes studies on-chain (StudyRegistry). Patients browse and consent. Institutions query Arkiv for matched cohorts and see only the data types each patient consented to.
 
 ---
 
@@ -23,12 +23,9 @@ GenomeChain lets patients store their whole genome and medical records, earn GNM
 
 | Track | Integration |
 |-------|-------------|
-| **World** | World ID Orb verification gating genome submission. `nullifier_hash` enforces one-genome-per-human. PBH for gas subsidies. Anon RPC for IP privacy. |
+| **World — Mini App** | World ID Orb gating genome submission (`nullifier_hash` = one-genome-per-human). MiniKit walletAuth + verify replace RainbowKit/IDKit — runs natively inside World App. Agent Pass gates AI health insights. |
 | **Arkiv (+ Swarm bonus)** | Genome datasets, per-chromosome segments, sealed health features and medical records as typed Arkiv entities pointing at encrypted bytes on Swarm. `/genome` reads them live. Consent grants expire with consent. See [`arkiv/`](arkiv/). |
-| **0G** | AI inference on encrypted genomic data inside TEE. Raw data never leaves patient control. |
-| **EF** | OP Stack L2 (WorldChain). All 7 contracts EVM-standard. |
-| **ENS** | Institution profiles in StudyRegistry resolve via ENS. |
-| **Definitive** | Genome-anchored RWD with on-chain consent audit trail. |
+| **EF Anon-RPC** | Every chain read goes through WorldChain Anon RPC — no IP→wallet linkage. GDPR Art. 9 compliance for medical data. See `docs/anon-rpc-integration.md`. |
 
 ---
 
@@ -72,17 +69,17 @@ pnpm dev
 
 ## Contract Addresses
 
-| Contract | Address |
-|----------|---------|
-| GenomeRegistry | TBD after deployment |
-| RecordVault | TBD after deployment |
-| ConsentManager | TBD after deployment |
-| HealthToken | TBD after deployment |
-| LabRegistry | TBD after deployment |
-| LabAttestation | TBD after deployment |
-| ProtocolRegistry | TBD after deployment |
+| Contract | Address (WorldChain Sepolia) |
+|----------|------------------------------|
+| HealthToken (GNM) | `0x62cD9Ce37C52C43eB8DA2C4CCcb263ae07f34E48` |
+| LabRegistry | `0x95FdD2510830F0A481d568E26E60AC2C302742ff` |
+| LabAttestation | `0xE6583D2ABa77909692e6d2466BD8D980D19d5a9c` |
+| GenomeRegistry | `0x6f5b65B4709f0020AAa75eeB5e3D279C773eDF91` |
+| RecordVault | `0x2Ee90d11C216E024209892cFf158C1A362e82598` |
+| ConsentManager | `0xa1D0A76Abf4399e55F47205783E5e5F3b1ceC671` |
+| ProtocolRegistry | `0x5EE1F97560379D16215Da1D79DBD0877dd2b6Fa0` |
 
-Network: WorldChain Sepolia (chain ID 4801) for testnet, WorldChain mainnet (chain ID 480) for production.
+Network: WorldChain Sepolia (chain ID 4801) · Explorer: https://worldchain-sepolia.explorer.alchemy.com
 
 ---
 
@@ -91,13 +88,12 @@ Network: WorldChain Sepolia (chain ID 4801) for testnet, WorldChain mainnet (cha
 | Layer | Technology |
 |-------|-----------|
 | Smart contracts | Solidity 0.8.x, Hardhat, TypeChain |
-| World ID | `@worldcoin/idkit` (frontend), `IWorldID` interface (Solidity) |
+| World ID | MiniKit (`@worldcoin/minikit-js`), `IWorldID` interface (Solidity) |
 | Genome pipeline | `packages/pipeline`: Node 22 + bcftools 1.16 / samtools / CrossMap in Docker, run on the lab node |
 | File storage | Swarm (`@ethersphere/bee-js` 13): AES-256-GCM ciphertext only, per-chromosome segments |
 | Encryption | per-file data keys wrapped to the patient's X25519 key (derived from a wallet signature), `packages/shared/src/keys.ts` |
 | Metadata DB | Arkiv Rabdi testnet (`@arkiv-network/sdk` 1.0): `genomechain.*` schemas in `packages/shared/src/arkiv.ts` |
-| Privacy RPC | WorldChain Anon RPC |
-| Confidential compute | 0G Private Computer (TEE) |
+| Privacy RPC | WorldChain Anon RPC — strips IP from all chain reads |
 | Frontend | Next.js, Wagmi, Viem |
 | Token | ERC-20 GNM with MINTER_ROLE |
 
@@ -107,24 +103,15 @@ Network: WorldChain Sepolia (chain ID 4801) for testnet, WorldChain mainnet (cha
 
 - [`docs/architecture.md`](docs/architecture.md) — full technical architecture
 - [`docs/ecosystem-flow.html`](docs/ecosystem-flow.html) — interactive data flow diagram
-- [`docs/genome-pipeline.md`](docs/genome-pipeline.md): genome data pipeline, covering design, normalization steps, measurements and status
-- [`arkiv/schema.md`](arkiv/schema.md): entities, the fields we query, owners, expiry
-- [`arkiv/how-you-use-arkiv.md`](arkiv/how-you-use-arkiv.md), [`arkiv/why-arkiv.md`](arkiv/why-arkiv.md), [`arkiv/reach.md`](arkiv/reach.md), [`arkiv/friction.md`](arkiv/friction.md): Arkiv judging criteria
-- [`arkiv/swarm.md`](arkiv/swarm.md): Arkiv + Swarm bonus (what lives where, how to run an upload and a read)
-
----
-
-## Arkiv: writer wallet and a query you can run
-
-- **Writer wallet (lab node):** _filled in after the first live run_
-- **Query** (read-only, no key needed beyond an Arkiv access key):
-
-```bash
-pnpm --filter pipeline run query -- --dataset <dataset entity key>
-pnpm --filter pipeline run query -- --patient <patient wallet>
-```
-
-It returns one row per chromosome (`chrom`, `variants`, `swarmRef`), the same data `/genome` shows.
+- [`docs/genome-pipeline.md`](docs/genome-pipeline.md) — genome data pipeline, normalization steps, measurements
+- [`docs/anon-rpc-integration.md`](docs/anon-rpc-integration.md) — Anonymous RPC integration + threat model
+- [`arkiv/schema.md`](arkiv/schema.md) — Arkiv entity schema
+- [`arkiv/why-arkiv.md`](arkiv/why-arkiv.md) — Arkiv prize submission
+- [`arkiv/reach.md`](arkiv/reach.md) — user reach and pilot plan
+- [`arkiv/friction.md`](arkiv/friction.md) — integration friction report
+- [`arkiv/how-you-use-arkiv.md`](arkiv/how-you-use-arkiv.md) — Arkiv usage walkthrough (5th prize file)
+- [`arkiv/swarm.md`](arkiv/swarm.md) — Arkiv + Swarm bonus (what lives where, how to run uploads/reads)
+- [`TEAM_TRACKS.md`](TEAM_TRACKS.md) — team work split and remaining tasks
 
 ---
 
@@ -137,7 +124,7 @@ bash packages/pipeline/scripts/run.sh --vcf /gc/in/HG002_GRCh38.vcf.gz \
   --patient 0x<wallet> --patient-pubkey <from /genome> [--nullifier <World ID nullifier>] [--dry-run]
 ```
 
-On GIAB HG002 (156 MB gz, ~1 GB VCF), the pipeline finishes in about 60 s on 16 threads: 4,096,123 variants, Ti/Tv 2.09, het/hom 1.58, and 22 encrypted segments totalling 67 MB.
+On GIAB HG002 (156 MB gz, ~1 GB VCF), pipeline finishes in ~60s on 16 threads: 4,096,123 variants, Ti/Tv 2.09, het/hom 1.58, 22 encrypted segments totalling 67 MB.
 
 ---
 

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import { useMiniKitAddress } from "@/hooks/useMiniKitAddress";
+import { MiniKit } from "@worldcoin/minikit-js";
 import { CONTRACTS, STUDY_REGISTRY_ABI } from "@/lib/contracts";
 
 const MOCK_STUDIES = [
@@ -58,14 +59,13 @@ const PHASE_COLORS: Record<string, string> = {
 };
 
 export default function StudiesPage() {
-  const { address } = useAccount();
+  const address = useMiniKitAddress();
   const [filter, setFilter] = useState<Filter>("All");
   const [joiningId, setJoiningId] = useState<number | null>(null);
   const [selectedTypes, setSelectedTypes] = useState<Record<number, string[]>>({});
   const [joinedIds, setJoinedIds] = useState<number[]>([]);
 
-  const { writeContract, data: txHash, isPending } = useWriteContract();
-  const { isSuccess } = useWaitForTransactionReceipt({ hash: txHash });
+  const [loading, setLoading] = useState(false);
 
   const filtered = MOCK_STUDIES.filter((s) => {
     if (filter === "Genome Required") return s.requiresGenome;
@@ -92,20 +92,26 @@ export default function StudiesPage() {
     }
   }
 
-  function confirmJoin(studyId: number) {
+  async function confirmJoin(studyId: number) {
     const types = selectedTypes[studyId] ?? [];
-    writeContract({
-      address: CONTRACTS.studyRegistry,
-      abi: STUDY_REGISTRY_ABI,
-      functionName: "joinStudy",
-      args: [BigInt(studyId), types],
-    });
-  }
-
-  // Close modal and mark joined on success
-  if (isSuccess && joiningId !== null) {
-    setJoinedIds((prev) => [...prev, joiningId]);
-    setJoiningId(null);
+    setLoading(true);
+    try {
+      const { finalPayload } = await MiniKit.commandsAsync.sendTransaction({
+        transaction: [{
+          address: CONTRACTS.studyRegistry as `0x${string}`,
+          abi: STUDY_REGISTRY_ABI,
+          functionName: "joinStudy",
+          args: [BigInt(studyId), types],
+        }],
+      });
+      if (finalPayload.status === "error") throw new Error(finalPayload.error_code);
+      setJoinedIds((prev) => [...prev, studyId]);
+      setJoiningId(null);
+    } catch (err) {
+      console.error("joinStudy failed", err);
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -257,10 +263,10 @@ export default function StudiesPage() {
                 </button>
                 <button
                   onClick={() => confirmJoin(joiningId)}
-                  disabled={!address || types.length === 0 || isPending}
+                  disabled={!address || types.length === 0 || loading}
                   className="flex-1 px-4 py-2.5 rounded-lg bg-genome-teal text-black text-sm font-semibold hover:opacity-90 transition disabled:opacity-40"
                 >
-                  {isPending ? "Confirming…" : `Confirm & Earn ${study.reward} GNM`}
+                  {loading ? "Confirming…" : `Confirm & Earn ${study.reward} GNM`}
                 </button>
               </div>
             </div>

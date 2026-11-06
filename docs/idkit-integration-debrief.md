@@ -71,7 +71,7 @@ Integration points:
 
 3. **Server-side proof verification without custom Ethereum node** — the `verifyProof` JS SDK (`@worldcoin/idkit/server`) exists but requires a network call to the World ID cloud verifier. For production latency, an offline verifier (WASM) would be preferable.
 
-4. **Agent Pass for AI-gated actions** — GenomeChain's `/insights` page routes genomic data through 0G Private Computer for AI inference. We explored requiring a fresh World ID Agent Pass before releasing AI insights ("prove you're human before getting your genome's risk scores"). We didn't integrate it in the hackathon window, but this is the ideal use case: human-in-the-loop AI access control.
+4. **Agent Pass for AI-gated actions** — GenomeChain's `/insights` page shows genomic risk scores. We explored requiring a fresh World ID Agent Pass before releasing AI insights ("prove you're human before getting your genome's risk scores"). We didn't integrate it in the hackathon window, but this is the ideal use case: human-in-the-loop AI access control.
 
 ---
 
