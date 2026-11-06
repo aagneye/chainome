@@ -1,4 +1,4 @@
-# GenomeChain — Build Status + 3-Way Split
+# Chainome — Build Status + 3-Way Split
 
 Snapshot of `dev` = `master` at `af58c99` (2026-11-06, after PRs #9 and #10).
 Supersedes the track list in `TEAM_TRACKS.md` (Tracks B and C there are merged).

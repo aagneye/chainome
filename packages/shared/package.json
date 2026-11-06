@@ -1,5 +1,5 @@
 {
-  "name": "@genomechain/shared",
+  "name": "@chainome/shared",
   "version": "0.1.0",
   "private": true,
   "type": "module",

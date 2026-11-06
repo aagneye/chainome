@@ -10,7 +10,7 @@ import { rabdi } from "@arkiv-network/sdk/chains";
 import { asc, eq } from "@arkiv-network/sdk/query";
 import { addr, key } from "@arkiv-network/sdk/schema";
 import { http, type Hex } from "viem";
-import { GenomeDataset, GenomeSegment } from "@genomechain/shared/arkiv";
+import { GenomeDataset, GenomeSegment } from "@chainome/shared/arkiv";
 
 const { values } = parseArgs({ options: { dataset: { type: "string" }, patient: { type: "string" } } });
 const client = createPublicClient({ chain: rabdi({ accessKey: process.env.ARKIV_ACCESS_KEY ?? "" }), transport: http() });

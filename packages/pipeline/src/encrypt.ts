@@ -3,7 +3,7 @@ import { createReadStream, createWriteStream } from "node:fs";
 import { stat } from "node:fs/promises";
 import { pipeline } from "node:stream/promises";
 import { Transform } from "node:stream";
-import { SEGMENT_MAGIC } from "@genomechain/shared/manifest";
+import { SEGMENT_MAGIC } from "@chainome/shared/manifest";
 
 export interface EncryptedFile {
   path: string;

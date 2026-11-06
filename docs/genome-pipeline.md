@@ -1,6 +1,6 @@
 # Genome data pipeline: VCF → Swarm + Arkiv + World Chain
 
-This document covers how GenomeChain gets a whole genome into the system and back out: what was built, why it's shaped this way, what we measured, and what's still open.
+This document covers how Chainome gets a whole genome into the system and back out: what was built, why it's shaped this way, what we measured, and what's still open.
 
 ## 1. The problem we hit
 

@@ -5,7 +5,7 @@ import { rabdi } from "@arkiv-network/sdk/chains";
 import { addr, u64 } from "@arkiv-network/sdk/schema";
 import { http, isAddress, isHex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { MedicalRecord, type RecordManifest } from "@genomechain/shared/arkiv";
+import { MedicalRecord, type RecordManifest } from "@chainome/shared/arkiv";
 
 /**
  * POST /api/records — multipart { cipher: Blob, meta: JSON }.
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
   }
   const bytes = new Uint8Array(await cipher.arrayBuffer());
   if (new TextDecoder().decode(bytes.subarray(0, 4)) !== "GCv1") {
-    return NextResponse.json({ error: "payload is not GenomeChain ciphertext — refusing to store plaintext" }, { status: 400 });
+    return NextResponse.json({ error: "payload is not Chainome ciphertext — refusing to store plaintext" }, { status: 400 });
   }
 
   try {

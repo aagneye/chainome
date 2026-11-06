@@ -5,11 +5,11 @@
  * segment's data key, decrypt with WebCrypto and check hashes against Arkiv/manifest.
  * The private key only ever lives in memory for the current page.
  */
-import { keyPairFromSignature, openSealed, unwrapKey, wrapKey, bytesToHex } from "@genomechain/shared/keys";
-import { SEGMENT_HEADER_BYTES, SEGMENT_MAGIC, type GenomeManifest } from "@genomechain/shared/manifest";
-import type { EncryptedBlob, FeatureSummary } from "@genomechain/shared/arkiv";
+import { keyPairFromSignature, openSealed, unwrapKey, wrapKey, bytesToHex } from "@chainome/shared/keys";
+import { SEGMENT_HEADER_BYTES, SEGMENT_MAGIC, type GenomeManifest } from "@chainome/shared/manifest";
+import type { EncryptedBlob, FeatureSummary } from "@chainome/shared/arkiv";
 
-export { KEY_DERIVATION_MESSAGE } from "@genomechain/shared/keys";
+export { KEY_DERIVATION_MESSAGE } from "@chainome/shared/keys";
 
 export type PatientKey = ReturnType<typeof keyPairFromSignature>;
 
@@ -54,7 +54,7 @@ export async function downloadAndDecrypt(
   const blob = new Uint8Array(await res.arrayBuffer());
   const cipherHashOk = (await sha256Hex(blob)) === seg.sha256Cipher;
 
-  if (new TextDecoder().decode(blob.subarray(0, 4)) !== SEGMENT_MAGIC) throw new Error("Not a GenomeChain segment");
+  if (new TextDecoder().decode(blob.subarray(0, 4)) !== SEGMENT_MAGIC) throw new Error("Not a Chainome segment");
   const dek = unwrapKey(seg.wrappedKey, key.privateKey);
   const aes = await crypto.subtle.importKey("raw", dek as BufferSource, "AES-GCM", false, ["decrypt"]);
   const plain = await crypto.subtle.decrypt(

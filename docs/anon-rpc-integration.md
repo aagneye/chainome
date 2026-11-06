@@ -1,8 +1,8 @@
-# Anon-RPC Integration — GenomeChain
+# Anon-RPC Integration — Chainome
 
 **ETHGlobal Mumbai 2026 · Ethereum Foundation · Best Use of Anon-RPC**
 
-GenomeChain routes **every chain read through [EF Anon-RPC](https://github.com/ethereum/anon-rpc) by default**, over the Nox mixnet, with no fallback to a direct RPC.
+Chainome routes **every chain read through [EF Anon-RPC](https://github.com/ethereum/anon-rpc) by default**, over the Nox mixnet, with no fallback to a direct RPC.
 
 ---
 

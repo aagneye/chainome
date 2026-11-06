@@ -1,4 +1,4 @@
-# GenomeChain — Full Ecosystem Flow
+# Chainome — Full Ecosystem Flow
 
 Mapped: 2026-11-06. Architecture derived from research phases 1–7.
 

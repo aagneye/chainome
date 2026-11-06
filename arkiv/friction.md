@@ -1,6 +1,6 @@
 # Arkiv friction log
 
-What got in our way while building GenomeChain at ETHGlobal Mumbai, with what we expected, what happened, and how to reproduce it.
+What got in our way while building Chainome at ETHGlobal Mumbai, with what we expected, what happened, and how to reproduce it.
 
 ## 1. `bigint` isn't accepted for a `u64` column
 

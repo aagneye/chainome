@@ -1,4 +1,4 @@
-# GenomeChain — Technical Architecture
+# Chainome — Technical Architecture
 
 ETHGlobal Mumbai 2026
 
@@ -16,7 +16,7 @@ ETHGlobal Mumbai 2026
 
 4. **FDA RWE gap.** The FDA's Real-World Evidence Framework (2018, mandated by 21st Century Cures Act §3022) accepts patient-contributed longitudinal records for drug indication expansion. This market is inaccessible without a provenance trail that genome-anchors each record to a verified unique human.
 
-**GenomeChain solves all four simultaneously.**
+**Chainome solves all four simultaneously.**
 
 ---
 
@@ -216,7 +216,7 @@ All contracts deployed on WorldChain (mainnet: chain ID 480, testnet: Sepolia ch
 
 ## Prize Track Mapping
 
-| Prize | Why GenomeChain Qualifies |
+| Prize | Why Chainome Qualifies |
 |-------|--------------------------|
 | **World** (Best use of World ID) | Core primitive: `nullifier_hash` enforces one-genome-per-human at EVM level. 160+ country coverage addresses GWAS diversity gap. PBH for gas subsidies on patient uploads. |
 | **Arkiv** (Best use of Arkiv DB) | Medical record metadata stored as owned entities. Patient wallet = owner. Consent checked on-chain. Expiry enforces GDPR. Cross-institution queryable without centralized broker. |
@@ -233,7 +233,7 @@ All contracts deployed on WorldChain (mainnet: chain ID 480, testnet: Sepolia ch
 
 **Lab attestation:** The `LabAttestation` contract and `LabRegistry` are deployed and tested. The hackathon demo simulates a lab attestation via the `/api/lab-attest` route. Production integration requires certified sequencing labs.
 
-**CDISC transformation:** Patient records are stored in raw structured form. Transformation to CDISC SDTM/ADaM format for FDA submission is a pipeline step handled by the institutional layer, not GenomeChain. This is by design — GenomeChain is not a LIMS.
+**CDISC transformation:** Patient records are stored in raw structured form. Transformation to CDISC SDTM/ADaM format for FDA submission is a pipeline step handled by the institutional layer, not Chainome. This is by design — Chainome is not a LIMS.
 
 **Future work:**
 - Full Arkiv SDK integration with on-chain consent gate

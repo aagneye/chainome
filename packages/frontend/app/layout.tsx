@@ -9,7 +9,7 @@ const MiniKitProvider = dynamic(() => import("@/components/MiniKitProvider"), { 
 const AnonRpcStatus = dynamic(() => import("@/components/AnonRpcStatus"), { ssr: false });
 
 export const metadata: Metadata = {
-  title: "GenomeChain",
+  title: "Chainome",
   description: "Patient-sovereign genome + health records on WorldChain",
 };
 

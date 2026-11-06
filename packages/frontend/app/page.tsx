@@ -36,7 +36,7 @@ export default function Home() {
       const { data } = await MiniKit.walletAuth({
         nonce,
         expirationTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-        statement: "Sign in to GenomeChain — patient-sovereign data marketplace",
+        statement: "Sign in to Chainome — patient-sovereign data marketplace",
       });
       sessionStorage.setItem("minikit_address", data.address);
       sessionStorage.setItem("minikit_signed_in", "true");

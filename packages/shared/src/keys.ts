@@ -15,9 +15,9 @@ import { bytesToHex, hexToBytes, randomBytes, utf8ToBytes } from "@noble/hashes/
 
 /** The message a patient signs to derive their encryption key. Changing it changes every key. */
 export const KEY_DERIVATION_MESSAGE =
-  "GenomeChain encryption key v1\n\nSigning this derives your private genome decryption key. It costs nothing and sends no transaction.";
+  "Chainome encryption key v1\n\nSigning this derives your private genome decryption key. It costs nothing and sends no transaction.";
 
-const WRAP_INFO = utf8ToBytes("genomechain/wrap-dek/v1");
+const WRAP_INFO = utf8ToBytes("chainome/wrap-dek/v1");
 
 export interface WrappedKey {
   /** ephemeral X25519 public key, hex */
@@ -36,7 +36,7 @@ export interface KeyPair {
 /** Derive the patient's X25519 key pair from their wallet signature (hex string). */
 export function keyPairFromSignature(signatureHex: string): KeyPair {
   const sig = hexToBytes(signatureHex.replace(/^0x/, ""));
-  const privateKey = hkdf(sha256, sig, undefined, utf8ToBytes("genomechain/x25519/v1"), 32);
+  const privateKey = hkdf(sha256, sig, undefined, utf8ToBytes("chainome/x25519/v1"), 32);
   return { privateKey, publicKey: x25519.getPublicKey(privateKey) };
 }
 

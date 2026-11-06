@@ -9,8 +9,8 @@ import {
   GenomeFeatures,
   GenomeSegment,
   type EncryptedBlob,
-} from "@genomechain/shared/arkiv";
-import type { GenomeManifest } from "@genomechain/shared/manifest";
+} from "@chainome/shared/arkiv";
+import type { GenomeManifest } from "@chainome/shared/manifest";
 import { env, PIPELINE_VERSION } from "./config";
 import { PANEL_VERSION } from "./features";
 import { log } from "./sh";
