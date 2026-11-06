@@ -189,7 +189,7 @@ wagmi on `dev` has no connectors, so every wallet action goes through MiniKit:
 | Decrypt round trip + hash checks | ✅ verified on the VM (CLI) |
 | Frontend typecheck + `next build` | ✅ |
 | Unit + integration tests (shared 33, pipeline 99, frontend 54) | ✅ all passing |
-| App upload → Azure lab node → pipeline | ✅ running on the VM in test mode; ⏳ HTTPS needs ports 80/443 + DNS label; ⏳ live writes need Arkiv access key, funded wallets, Swarm batch |
+| App upload → Azure lab node → pipeline | ✅ live over HTTPS (Let's Encrypt, ports 80/443 open, DNS label set) in test mode; 156 MB upload processed in 69 s end to end; ⏳ live Swarm/Arkiv writes need the Arkiv access key, funded wallets and a Swarm batch |
 | Wallet actions via MiniKit (`/genome`, `/records`, `/consent` writes; patient key via `MiniKit.signMessage`; `/verify` + `/insights` address) | ✅ typechecked + unit-tested, ⏳ not yet run in World App |
 | Swarm upload / Arkiv write against live networks | ⏳ needs a postage batch + Bee URL, and a funded Rabdi key + access key |
 | `arkiv/*.md` and README "proof" values (entity keys, batch ID, writer wallet) | ⏳ filled in after the first live run |
