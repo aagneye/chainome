@@ -25,31 +25,53 @@ async function main() {
   await token.waitForDeployment();
   console.log(`HealthToken (GNM):   ${await token.getAddress()}`);
 
-  // 2. GenomeRegistry
+  // 2. LabRegistry
+  const LabRegistry = await ethers.getContractFactory("LabRegistry");
+  const labRegistry = await LabRegistry.deploy();
+  await labRegistry.waitForDeployment();
+  console.log(`LabRegistry:         ${await labRegistry.getAddress()}`);
+
+  // 3. LabAttestation(labRegistry)
+  const LabAttestation = await ethers.getContractFactory("LabAttestation");
+  const labAttestation = await LabAttestation.deploy(await labRegistry.getAddress());
+  await labAttestation.waitForDeployment();
+  console.log(`LabAttestation:      ${await labAttestation.getAddress()}`);
+
+  // 4. GenomeRegistry — now takes labAttestation as 5th arg
   const GenomeRegistry = await ethers.getContractFactory("GenomeRegistry");
-  const registry = await GenomeRegistry.deploy(worldIdRouter, APP_ID, ACTION, await token.getAddress());
+  const registry = await GenomeRegistry.deploy(
+    worldIdRouter,
+    APP_ID,
+    ACTION,
+    await token.getAddress(),
+    await labAttestation.getAddress(),
+  );
   await registry.waitForDeployment();
   console.log(`GenomeRegistry:      ${await registry.getAddress()}`);
 
-  // 3. RecordVault
+  // 5. RecordVault
   const RecordVault = await ethers.getContractFactory("RecordVault");
   const vault = await RecordVault.deploy(await token.getAddress());
   await vault.waitForDeployment();
   console.log(`RecordVault:         ${await vault.getAddress()}`);
 
-  // 4. ConsentManager
+  // 6. ConsentManager
   const ConsentManager = await ethers.getContractFactory("ConsentManager");
   const consent = await ConsentManager.deploy();
   await consent.waitForDeployment();
   console.log(`ConsentManager:      ${await consent.getAddress()}`);
 
-  // 5. ProtocolRegistry
+  // 7. ProtocolRegistry
   const ProtocolRegistry = await ethers.getContractFactory("ProtocolRegistry");
   const protocols = await ProtocolRegistry.deploy();
   await protocols.waitForDeployment();
   console.log(`ProtocolRegistry:    ${await protocols.getAddress()}`);
 
-  // Grant MINTER_ROLE to registry + vault
+  // 8. Certify deployer as demo lab
+  await labRegistry.certifyLab(deployer.address, "GenomeChain Demo Lab");
+  console.log(`Certified ${deployer.address} as "GenomeChain Demo Lab"`);
+
+  // 9-10. Grant MINTER_ROLE to registry + vault
   const MINTER_ROLE = await token.MINTER_ROLE();
   await token.grantRole(MINTER_ROLE, await registry.getAddress());
   await token.grantRole(MINTER_ROLE, await vault.getAddress());
@@ -57,6 +79,8 @@ async function main() {
 
   console.log("\n── Add to .env ──────────────────────────────────────");
   console.log(`NEXT_PUBLIC_HEALTH_TOKEN=${await token.getAddress()}`);
+  console.log(`NEXT_PUBLIC_LAB_REGISTRY=${await labRegistry.getAddress()}`);
+  console.log(`NEXT_PUBLIC_LAB_ATTESTATION=${await labAttestation.getAddress()}`);
   console.log(`NEXT_PUBLIC_GENOME_REGISTRY=${await registry.getAddress()}`);
   console.log(`NEXT_PUBLIC_RECORD_VAULT=${await vault.getAddress()}`);
   console.log(`NEXT_PUBLIC_CONSENT_MANAGER=${await consent.getAddress()}`);
