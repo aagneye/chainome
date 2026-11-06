@@ -264,11 +264,21 @@ sup.cite:hover { background: rgba(148,163,184,.25); }
 
 <!-- HEADER -->
 <header class="site-header">
-  <div class="header-badge">ETHGlobal Mumbai 2026 — Architecture Map v2</div>
+  <div class="header-badge">ETHGlobal Mumbai 2026 — Architecture Map v3</div>
   <div class="header-top">
     <div>
       <h1>GenomeChain<br>Ecosystem Flow</h1>
-      <p class="header-sub">Full data flow: patient genome + records → federated institutional research → FDA/EMA regulatory gate → findings back to patients. All claims cited. Click each layer to expand.</p>
+      <p class="header-sub">Full data flow: patient genome + records → Arkiv metadata layer → federated institutional research → FDA/EMA regulatory gate → findings back to patients. All claims cited. Click each layer to expand.</p>
+      <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
+        <div style="background:rgba(0,201,167,.08); border:1px solid rgba(0,201,167,.25); border-radius:8px; padding:10px 14px; flex:1; min-width:200px;">
+          <div style="font-size:.68rem; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--patient); font-family:'Space Grotesk',sans-serif; margin-bottom:4px;">Layer 1 — Public Consumer App</div>
+          <p style="font-size:.78rem; color:var(--fg-muted);">WorldApp / Web: upload medical bills, scans, prescriptions, lab reports, genomes. Earn GNM tokens. All data encrypted → Lighthouse. Metadata → Arkiv. CID → WorldChain. All txs via Anon RPC.</p>
+        </div>
+        <div style="background:rgba(167,139,250,.08); border:1px solid rgba(167,139,250,.25); border-radius:8px; padding:10px 14px; flex:1; min-width:200px;">
+          <div style="font-size:.68rem; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--institutional); font-family:'Space Grotesk',sans-serif; margin-bottom:4px;">Layer 2 — Research Marketplace</div>
+          <p style="font-size:.78rem; color:var(--fg-muted);">Pharmas publish studies via StudyRegistry. Patients browse, verify World ID, consent. Institution queries Arkiv → 0G Private Computer processes encrypted data → aggregate insights only returned.</p>
+        </div>
+      </div>
     </div>
   </div>
 </header>
@@ -409,6 +419,18 @@ sup.cite:hover { background: rgba(148,163,184,.25); }
           <h4 style="color:var(--chain)">PBH — Priority Blockspace for Humans <sup class="cite" onclick="goTo(3)">3</sup></h4>
           <p>Orb-verified humans get sequencer priority + gas subsidies. Mainnet live June 26, 2025. Patient uploads never get frontrun by MEV bots. High-frequency medical record updates don't require users to hold ETH — gas sponsorable via paymaster.</p>
         </div>
+        <div class="detail-card">
+          <h4 style="color:var(--chain)">StudyRegistry Contract</h4>
+          <p>Pharma/research institutions publish studies on-chain: eligibility criteria, data types required, budget per patient. Patients browse and consent. All study terms are immutable once posted — no retroactive scope creep. Part of the two-layer research marketplace.</p>
+        </div>
+        <div class="detail-card">
+          <h4 style="color:var(--chain)">LabRegistry + LabAttestation Contracts</h4>
+          <p><code>LabRegistry</code> whitelists approved sequencing labs. <code>LabAttestation</code> records lab signatures: <code>attest(patient, genomeCID, labId, sig)</code>. <code>GenomeRegistry</code> requires a valid lab attestation before accepting any genome — prevents fabricated data from corrupting research cohorts.</p>
+        </div>
+        <div class="detail-card">
+          <h4 style="color:var(--chain)">WorldChain Anon RPC</h4>
+          <p>All patient transactions broadcast via WorldChain's anonymous RPC. Strips IP address from tx submission — no IP→wallet→medical data linkage. A patient uploading their genome cannot be identified by network-level surveillance regardless of jurisdiction.</p>
+        </div>
       </div>
 
       <div class="evidence-box">
@@ -438,11 +460,59 @@ sup.cite:hover { background: rgba(148,163,184,.25); }
     </div>
   </div>
 
-  <!-- CONNECTOR 2 -->
+  <!-- CONNECTOR 2a -->
   <div class="connector">
-    <div class="connector-line" style="background: linear-gradient(var(--chain), var(--institutional))"></div>
-    <div class="connector-label">on-chain consent signed · access token generated · no raw data transmitted</div>
-    <div class="connector-line" style="background: linear-gradient(var(--chain), var(--institutional))"></div>
+    <div class="connector-line" style="background: linear-gradient(var(--chain), #f59e0b)"></div>
+    <div class="connector-label">metadata entities written · owner = patient wallet · expiry set at creation</div>
+    <div class="connector-line" style="background: linear-gradient(var(--chain), #f59e0b)"></div>
+    <div class="connector-arrow">▼</div>
+  </div>
+
+  <!-- ══ LAYER 2.5: ARKIV ══ -->
+  <div class="layer" id="L25" style="background: var(--bg-layer); border-color: rgba(245,158,11,.28);">
+    <div class="layer-header" onclick="toggle('L25')">
+      <div class="layer-icon" style="background: rgba(245,158,11,.12); color: #f59e0b;">🗄️</div>
+      <div class="layer-meta">
+        <div class="layer-name" style="color: #f59e0b;">Arkiv — Queryable Metadata Layer</div>
+        <div class="layer-role">Patient-owned entities · Consent-gated queries · 10-year GDPR expiry</div>
+      </div>
+      <div class="layer-toggle">▼</div>
+    </div>
+    <div class="layer-summary">
+      <span class="chip">Owner = patient wallet</span>
+      <span class="chip">ICD-10 indexed</span>
+      <span class="chip">Cross-institution queryable</span>
+      <span class="chip">Native expiry</span>
+    </div>
+    <div class="layer-detail">
+      <p class="detail-section-title">What Arkiv Stores</p>
+      <p style="font-size:.82rem; color:var(--fg-muted); margin-bottom:12px">Medical record <em>metadata</em> — not the files themselves. The encrypted files live on Lighthouse/IPFS. Arkiv stores the index that makes them discoverable and queryable by consented institutions.</p>
+      <div class="detail-grid">
+        <div class="detail-card">
+          <h4 style="color:#f59e0b;">Entity: medical_record_v1</h4>
+          <p><code>type</code> (genome/lab_report/prescription/imaging/bill) · <code>cid</code> (IPFS CID of encrypted file) · <code>date</code> · <code>institution</code> · <code>icd10Category</code> · <code>tags[]</code> · <code>anonymousId</code> (partial nullifier for cross-referencing)</p>
+        </div>
+        <div class="detail-card">
+          <h4 style="color:#f59e0b;">What Makes It Different From Postgres</h4>
+          <p>The row owner is the patient's wallet — not a DBA. Consent is enforced by on-chain ConsentManager state at query time. 10-year expiry is structural, not a cron job. No central database to breach — CIDs are meaningless without the patient's AES key.</p>
+        </div>
+        <div class="detail-card">
+          <h4 style="color:#f59e0b;">What Institutions Can Query</h4>
+          <p>With a valid on-chain ConsentGrant: "patients where <code>icd10Category = 'metabolic'</code> AND <code>tags CONTAINS 'HbA1c'</code> AND type includes genome." Finds matching cohorts without accessing any file content. Files accessed only after TEE compute step.</p>
+        </div>
+        <div class="detail-card">
+          <h4 style="color:#f59e0b;">GDPR Compliance Properties</h4>
+          <p>Art. 17 (erasure): patient destroys AES key → file irrecoverable. Art. 5(1)(e) (storage limitation): entity expires at 10 years structurally. Art. 7(3) (withdraw consent): one tx to ConsentManager, Arkiv stops serving immediately on next query.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONNECTOR 2b -->
+  <div class="connector">
+    <div class="connector-line" style="background: linear-gradient(#f59e0b, var(--institutional))"></div>
+    <div class="connector-label">on-chain consent signed · Arkiv query returns matched cohort · no raw data transmitted</div>
+    <div class="connector-line" style="background: linear-gradient(#f59e0b, var(--institutional))"></div>
     <div class="connector-arrow">▼</div>
   </div>
 
