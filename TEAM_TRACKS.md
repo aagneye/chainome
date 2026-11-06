@@ -61,7 +61,7 @@ This gates AI-generated risk scores behind "prove you're human" — the ideal Ag
 - In `/api/health-insights` route: validate the agent pass proof before returning data
 - Reference: https://docs.world.org/world-id/id/agent-pass
 
-#### `docs/arkiv/how-you-use-arkiv.md`
+#### `arkiv/how-you-use-arkiv.md`
 Required 5th Arkiv prize file. Answer:
 - What schema do you write? (medical_record_v1 entity structure)
 - What queries do institutions run? (SQL-like filter examples)

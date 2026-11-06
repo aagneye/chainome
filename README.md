@@ -8,10 +8,13 @@ ETHGlobal Mumbai 2026 — Nov 5–8.
 
 ## What It Is
 
-GenomeChain lets patients upload their medical records and genomic data, earn GNM tokens, and consent to share de-identified metadata with research institutions. All files are AES-256 encrypted before leaving the device. Encrypted blobs go to Lighthouse (IPFS+Filecoin). Only the 46-byte CID lands on WorldChain. World ID enforces one genome per unique human at the EVM level — the Sybil-resistance primitive that every prior genomic marketplace lacked.
+GenomeChain lets patients store their whole genome and medical records, earn GNM tokens, and consent to share them with research institutions.
+- A certified lab node normalizes the patient's VCF (≤2 GB) to GRCh38, splits it per chromosome and encrypts each segment to the patient's key.
+- Ciphertext lives on **Swarm**, the queryable index on **Arkiv**, and one manifest reference on **World Chain**.
+- World ID enforces one genome per unique human at the EVM level, the Sybil-resistance primitive that every prior genomic marketplace lacked.
 
 **Two layers:**
-- **Consumer app:** Upload bills, scans, prescriptions, lab reports, genomes → earn GNM. All chain reads via EF Anon-RPC over the Nox mixnet (no IP→wallet linkage). Metadata indexed in Arkiv (patient-owned entities, consent-gated, GDPR-native expiry).
+- **Consumer app:** genomes via the lab pipeline; bills, scans, prescriptions and lab reports encrypted in the browser → earn GNM. All transactions go through Anon RPC (no IP→wallet linkage). The index lives in Arkiv: public pointers and hashes, with health findings sealed to the patient.
 - **Research marketplace:** Pharma publishes studies on-chain (StudyRegistry). Patients browse and consent. Institutions query Arkiv for matched cohorts and see only the data types each patient consented to.
 
 ---
@@ -20,24 +23,23 @@ GenomeChain lets patients upload their medical records and genomic data, earn GN
 
 | Track | Integration |
 |-------|-------------|
-| **World — IDKit + Mini App** | World ID Orb gating genome submission (`nullifier_hash` = one-genome-per-human). MiniKit walletAuth + verify replace RainbowKit/IDKit — runs natively inside World App. Agent Pass gates AI health insights. |
-| **Arkiv** | Medical record metadata stored as patient-owned Arkiv entities. Consent-gated by on-chain ConsentManager. 10-year GDPR expiry. Cross-institution queryable without centralized broker. 5/5 prize files in `docs/arkiv/`. |
-| **Ethereum Foundation** | `ProtocolRegistry.sol` pre-registers clinical trial protocols on-chain before CT.gov. Detects outcome switching cryptographically. All contracts EVM-standard on WorldChain (OP Stack L2). |
-| **EF Anon-RPC** | Every chain read the app makes goes through EF Anon-RPC (`@anon-rpc/browser-harness`, Nox mixnet) by default, with no direct-RPC fallback. The RPC provider never sees the patient's IP. See `docs/anon-rpc-integration.md`. |
+| **World — Mini App** | World ID Orb gating genome submission (`nullifier_hash` = one-genome-per-human). MiniKit walletAuth + verify replace RainbowKit/IDKit — runs natively inside World App. Agent Pass gates AI health insights. |
+| **Arkiv (+ Swarm bonus)** | Genome datasets, per-chromosome segments, sealed health features and medical records as typed Arkiv entities pointing at encrypted bytes on Swarm. `/genome` reads them live. Consent grants expire with consent. See [`arkiv/`](arkiv/). |
+| **EF Anon-RPC** | Every chain read goes through WorldChain Anon RPC — no IP→wallet linkage. GDPR Art. 9 compliance for medical data. See `docs/anon-rpc-integration.md`. |
 
 ---
 
 ## Architecture
 
 ```
-Patient → encrypt(AES-256) → Lighthouse/IPFS → CID on WorldChain
-                                                      │
-                                              Arkiv metadata entity
-                                              (owner = patient wallet)
-                                                      │
-                                         Institution queries (with consent)
-                                                      │
-                                         Only consented data types shared
+VCF ≤2 GB ──lab node (packages/pipeline, Docker)──────────────────────────────────────────
+  detect build → GRCh38 (liftover if 37) → bcftools norm/PASS → anonymize header → QC
+  → PGx panel (sealed to patient) → split per chromosome → AES-256-GCM per segment
+        │                                   │                                  │
+   Swarm: ciphertext + manifest.json   Arkiv: dataset / segment /         World Chain:
+   (plain refs, safe to publish)       features entities (Rabdi)          LabAttestation(manifestRef)
+                                            │                          → GenomeRegistry.submitGenome
+                                  /genome reads Arkiv → downloads from Swarm → decrypts in browser
 ```
 
 Contracts (all on WorldChain): `GenomeRegistry`, `RecordVault`, `ConsentManager`, `HealthToken`, `LabRegistry`, `LabAttestation`, `ProtocolRegistry`.
@@ -86,10 +88,12 @@ Network: WorldChain Sepolia (chain ID 4801) · Explorer: https://worldchain-sepo
 | Layer | Technology |
 |-------|-----------|
 | Smart contracts | Solidity 0.8.x, Hardhat, TypeChain |
-| World ID | `@worldcoin/idkit` (frontend), `IWorldID` interface (Solidity) |
-| File storage | Lighthouse SDK (IPFS + Filecoin), AES-256 client-side encryption |
-| Metadata DB | Arkiv — `medical_record_v1` entities, patient-owned |
-| Privacy RPC | EF Anon-RPC (`@anon-rpc/browser-harness`, Nox mixnet; Nym backup) |
+| World ID | MiniKit (`@worldcoin/minikit-js`), `IWorldID` interface (Solidity) |
+| Genome pipeline | `packages/pipeline`: Node 22 + bcftools 1.16 / samtools / CrossMap in Docker, run on the lab node |
+| File storage | Swarm (`@ethersphere/bee-js` 13): AES-256-GCM ciphertext only, per-chromosome segments |
+| Encryption | per-file data keys wrapped to the patient's X25519 key (derived from a wallet signature), `packages/shared/src/keys.ts` |
+| Metadata DB | Arkiv Rabdi testnet (`@arkiv-network/sdk` 1.0): `genomechain.*` schemas in `packages/shared/src/arkiv.ts` |
+| Privacy RPC | WorldChain Anon RPC — strips IP from all chain reads |
 | Frontend | Next.js, Wagmi, Viem |
 | Token | ERC-20 GNM with MINTER_ROLE |
 
@@ -99,15 +103,28 @@ Network: WorldChain Sepolia (chain ID 4801) · Explorer: https://worldchain-sepo
 
 - [`docs/architecture.md`](docs/architecture.md) — full technical architecture
 - [`docs/ecosystem-flow.html`](docs/ecosystem-flow.html) — interactive data flow diagram
-- [`docs/arkiv/schema.md`](docs/arkiv/schema.md) — Arkiv entity schema
-- [`docs/arkiv/why-arkiv.md`](docs/arkiv/why-arkiv.md) — Arkiv prize submission
-- [`docs/arkiv/reach.md`](docs/arkiv/reach.md) — user reach and pilot plan
-- [`docs/arkiv/friction.md`](docs/arkiv/friction.md) — integration friction report
-- [`docs/arkiv/how-you-use-arkiv.md`](docs/arkiv/how-you-use-arkiv.md) — Arkiv usage walkthrough (5th prize file)
+- [`docs/genome-pipeline.md`](docs/genome-pipeline.md) — genome data pipeline, normalization steps, measurements
 - [`docs/anon-rpc-integration.md`](docs/anon-rpc-integration.md) — Anonymous RPC integration + threat model
-- [`docs/ens-integration.md`](docs/ens-integration.md) — ENS subname architecture for datasets
-- [`docs/idkit-integration-debrief.md`](docs/idkit-integration-debrief.md) — World IDKit debrief (prize submission)
+- [`arkiv/schema.md`](arkiv/schema.md) — Arkiv entity schema
+- [`arkiv/why-arkiv.md`](arkiv/why-arkiv.md) — Arkiv prize submission
+- [`arkiv/reach.md`](arkiv/reach.md) — user reach and pilot plan
+- [`arkiv/friction.md`](arkiv/friction.md) — integration friction report
+- [`arkiv/how-you-use-arkiv.md`](arkiv/how-you-use-arkiv.md) — Arkiv usage walkthrough (5th prize file)
+- [`arkiv/swarm.md`](arkiv/swarm.md) — Arkiv + Swarm bonus (what lives where, how to run uploads/reads)
 - [`TEAM_TRACKS.md`](TEAM_TRACKS.md) — team work split and remaining tasks
+
+---
+
+## Genome pipeline (lab node)
+
+```bash
+docker build -f packages/pipeline/docker/Dockerfile -t genomechain-pipeline .
+bash packages/pipeline/scripts/setup-vm.sh          # GRCh38 FASTA, liftover chain, GIAB HG002 demo VCF
+bash packages/pipeline/scripts/run.sh --vcf /gc/in/HG002_GRCh38.vcf.gz \
+  --patient 0x<wallet> --patient-pubkey <from /genome> [--nullifier <World ID nullifier>] [--dry-run]
+```
+
+On GIAB HG002 (156 MB gz, ~1 GB VCF), pipeline finishes in ~60s on 16 threads: 4,096,123 variants, Ti/Tv 2.09, het/hom 1.58, 22 encrypted segments totalling 67 MB.
 
 ---
 

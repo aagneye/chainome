@@ -1,48 +1,40 @@
 "use client";
 
-import { MiniKit, VerificationLevel, type MiniAppVerifyActionSuccessPayload } from "@worldcoin/minikit-js";
+import { IDKitWidget, VerificationLevel, type ISuccessResult } from "@worldcoin/idkit";
+import { useAccount } from "wagmi";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { useMiniKitAddress } from "@/hooks/useMiniKitAddress";
 
-const ACTION = process.env.NEXT_PUBLIC_WLD_ACTION ?? "genome_submission";
+const APP_ID  = process.env.NEXT_PUBLIC_WLD_APP_ID  as `app_${string}`;
+const ACTION  = process.env.NEXT_PUBLIC_WLD_ACTION  ?? "genome_submission";
 
 type Status = "idle" | "verifying" | "success" | "denied";
 
 export default function VerifyPage() {
-  const address = useMiniKitAddress();
+  const { address } = useAccount();
   const router = useRouter();
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
 
-  async function handleVerify() {
-    if (!MiniKit.isInstalled()) {
-      setError("Open inside World App to verify.");
-      setStatus("denied");
-      return;
-    }
-    setStatus("verifying");
-    setError(null);
-    try {
-      const { finalPayload } = await MiniKit.commandsAsync.verify({
-        action: ACTION,
-        signal: address ?? "",
-        verification_level: VerificationLevel.Orb,
-      });
+  function onSuccess(result: ISuccessResult) {
+    setStatus("success");
+    sessionStorage.setItem("wld_proof", JSON.stringify(result));
+    setTimeout(() => router.push("/genome"), 1200);
+  }
 
-      if (finalPayload.status === "error") {
-        setStatus("denied");
-        setError("Verification failed or was cancelled. World ID required to continue.");
-        return;
-      }
+  function onError(err?: { code?: string; message?: string }) {
+    setStatus("denied");
+    const msg = err?.code === "user_rejected"
+      ? "Verification cancelled. You must complete World ID verification to continue."
+      : err?.message
+        ? `Verification failed: ${err.message}`
+        : "Verification failed or was denied. Only verified humans can submit genomic data.";
+    setError(msg);
+  }
 
-      sessionStorage.setItem("wld_proof", JSON.stringify(finalPayload));
-      setStatus("success");
-      setTimeout(() => router.push("/genome"), 1200);
-    } catch (e) {
-      setStatus("denied");
-      setError(e instanceof Error ? e.message : "Verification failed");
-    }
+  if (!address) {
+    router.push("/");
+    return null;
   }
 
   if (status === "success") {
@@ -61,6 +53,7 @@ export default function VerifyPage() {
     );
   }
 
+  // Denied / cancelled path — blocked state
   if (status === "denied") {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center gap-6 px-4">
@@ -105,35 +98,46 @@ export default function VerifyPage() {
         </p>
       </div>
 
-      <div className="flex flex-col items-center gap-3">
-        <button
-          onClick={handleVerify}
-          disabled={status === "verifying"}
-          className="relative px-6 py-3 rounded-lg bg-genome-teal text-black font-semibold
-                     hover:opacity-90 active:scale-95 transition-all disabled:opacity-60
-                     shadow-[0_0_20px_rgba(0,201,167,0.25)]"
-        >
-          {status === "verifying" ? (
-            <span className="flex items-center gap-2">
-              <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-              </svg>
-              Verifying in World App…
-            </span>
-          ) : (
-            "Verify with World ID"
-          )}
-        </button>
-        {status === "verifying" && (
-          <button
-            onClick={() => { setStatus("denied"); setError("Verification cancelled. You must complete World ID verification to continue."); }}
-            className="text-xs text-gray-600 hover:text-gray-400 transition"
-          >
-            Cancel
-          </button>
+      <IDKitWidget
+        app_id={APP_ID}
+        action={ACTION}
+        signal={address}
+        onSuccess={onSuccess}
+        onError={onError}
+        verification_level={VerificationLevel.Orb}
+      >
+        {({ open }: { open: () => void }) => (
+          <div className="flex flex-col items-center gap-3">
+            <button
+              onClick={() => { setError(null); setStatus("verifying"); open(); }}
+              disabled={status === "verifying"}
+              className="relative px-6 py-3 rounded-lg bg-genome-teal text-black font-semibold
+                         hover:opacity-90 active:scale-95 transition-all disabled:opacity-60
+                         shadow-[0_0_20px_rgba(0,201,167,0.25)]"
+            >
+              {status === "verifying" ? (
+                <span className="flex items-center gap-2">
+                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                  </svg>
+                  Opening World ID…
+                </span>
+              ) : (
+                "Verify with World ID"
+              )}
+            </button>
+            {status === "verifying" && (
+              <button
+                onClick={() => { setStatus("denied"); setError("Verification cancelled. You must complete World ID verification to continue."); }}
+                className="text-xs text-gray-600 hover:text-gray-400 transition"
+              >
+                Cancel
+              </button>
+            )}
+          </div>
         )}
-      </div>
+      </IDKitWidget>
 
       <p className="text-xs text-gray-600">
         No Orb nearby? Use the{" "}

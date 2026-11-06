@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useReadContract } from "wagmi";
+import { useAccount, useReadContract } from "wagmi";
 import { useRouter } from "next/navigation";
-import { MiniKit, VerificationLevel } from "@worldcoin/minikit-js";
-import { CONTRACTS } from "@/lib/contracts";
-import Skeleton from "@/components/Skeleton";
-import { useMiniKitAddress } from "@/hooks/useMiniKitAddress";
+import { IDKitWidget, VerificationLevel, type ISuccessResult } from "@worldcoin/idkit";
+import { CONTRACTS, GENOME_REGISTRY_ABI, RECORD_VAULT_ABI } from "@/lib/contracts";
+
+const APP_ID = process.env.NEXT_PUBLIC_WLD_APP_ID as `app_${string}`;
 
 interface RiskScore {
   condition: string;
@@ -29,7 +29,7 @@ interface HealthInsights {
   pharmacogenomics: PharmacogenomicsEntry[];
   ancestryMarkers: { population: string; proportion: number }[];
   computedAt: number;
-  source: "demo";
+  source: "0g-private-compute" | "stub";
 }
 
 const RISK_COLOR: Record<string, string> = {
@@ -50,7 +50,7 @@ function Skeleton({ className }: { className?: string }) {
 }
 
 export default function InsightsPage() {
-  const address = useMiniKitAddress();
+  const { address } = useAccount();
   const router = useRouter();
   const [insights, setInsights] = useState<HealthInsights | null>(null);
   const [loading, setLoading] = useState(false);
@@ -65,17 +65,17 @@ export default function InsightsPage() {
   const nullifierHash = proofRaw ? JSON.parse(proofRaw).nullifier_hash : null;
 
   const { data: genomeCID } = useReadContract({
-    address: CONTRACTS.genomeRegistry.address as `0x${string}`,
-    abi: CONTRACTS.genomeRegistry.abi,
+    address: CONTRACTS.genomeRegistry,
+    abi: GENOME_REGISTRY_ABI,
     functionName: "genomeCID",
     args: nullifierHash ? [BigInt(nullifierHash)] : undefined,
     query: { enabled: !!nullifierHash && !!CONTRACTS.genomeRegistry },
   });
 
   const { data: recordCount } = useReadContract({
-    address: CONTRACTS.recordVault.address as `0x${string}`,
-    abi: CONTRACTS.recordVault.abi,
-    functionName: "getRecordCount",
+    address: CONTRACTS.recordVault,
+    abi: RECORD_VAULT_ABI,
+    functionName: "recordCount",
     args: address ? [address] : undefined,
     query: { enabled: !!address && !!CONTRACTS.recordVault },
   });
@@ -117,8 +117,13 @@ export default function InsightsPage() {
       <div className="animate-slide-up mb-8">
         <h1 className="text-3xl font-bold text-genome-teal mb-1">Health Insights</h1>
         <p className="text-gray-400 text-sm leading-relaxed">
-          Unlocked with a World ID Agent Pass, so only a verified human can request insights.
-          <span className="ml-1 text-gray-600">(demo scores — not a medical result)</span>
+          Computed via{" "}
+          <span className="text-genome-violet font-medium">0G Private Compute</span>
+          {" "}— your genome CID is processed inside a confidential execution environment.
+          Raw data never leaves your encrypted node.
+          {insights?.source === "stub" && (
+            <span className="ml-1 text-gray-600">(stub mode — no ZERO_G_API_KEY set)</span>
+          )}
         </p>
       </div>
 
@@ -147,24 +152,25 @@ export default function InsightsPage() {
             AI-generated health insights require World ID Agent Pass verification.
             This prevents AI interpretations from being attributed to unverified actors.
           </p>
-          <button
-            onClick={async () => {
-              if (!MiniKit.isInstalled()) return;
-              const { finalPayload } = await MiniKit.commandsAsync.verify({
-                action: "request_health_insights",
-                signal: address ?? "",
-                verification_level: VerificationLevel.Device,
-              });
-              if (finalPayload.status !== "error") {
-                sessionStorage.setItem("agent_pass_proof", JSON.stringify(finalPayload));
-                setAgentPassVerified(true);
-                fetchInsights();
-              }
+          <IDKitWidget
+            app_id={APP_ID}
+            action="request_health_insights"
+            signal={address ?? ""}
+            onSuccess={(result: ISuccessResult) => {
+              sessionStorage.setItem("agent_pass_proof", JSON.stringify(result));
+              setAgentPassVerified(true);
             }}
-            className="px-5 py-2.5 rounded-lg bg-genome-violet text-white font-semibold hover:opacity-90 transition shadow-[0_0_20px_rgba(139,92,246,0.3)]"
+            verification_level={VerificationLevel.Device}
           >
-            Unlock with Agent Pass
-          </button>
+            {({ open }: { open: () => void }) => (
+              <button
+                onClick={open}
+                className="px-5 py-2.5 rounded-lg bg-genome-violet text-white font-semibold hover:opacity-90 transition shadow-[0_0_20px_rgba(139,92,246,0.3)]"
+              >
+                Unlock with Agent Pass
+              </button>
+            )}
+          </IDKitWidget>
           <p className="text-xs text-gray-600 mt-4">
             Uses Device verification — no Orb required · Proof expires per session
           </p>

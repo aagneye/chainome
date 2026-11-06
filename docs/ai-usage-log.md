@@ -251,6 +251,33 @@ Human-led questioning that shaped the medicine-ledger concept:
 
 ---
 
+### 2026-11-06 — Session 4: Genome data pipeline (Swarm + Arkiv)
+
+**Tool:** Claude Code desktop app (Claude Opus 5.5), with one Explore subagent for the code survey.
+
+**Human direction:**
+- Whole-genome data must work end to end. The input is a VCF of about 1 GB, kept under 2 GB.
+- Arkiv can't hold that much, so use Swarm for the bytes, split into chunks.
+- Run the heavy processing on the team's Azure GPU VM, and keep VM details out of the public repo.
+
+**What the AI did:**
+- Researched the Arkiv SDK 1.0, bee-js 13 and IDKit docs, plus the ETHGlobal Arkiv and Swarm prize rules.
+- Proposed the design (Swarm ciphertext, Arkiv index, World Chain anchor; per-chromosome segments; keys derived from a wallet signature), which the human approved in plan mode.
+- Wrote `packages/shared`, `packages/pipeline` (Docker on the VM) and the `/genome` and `/records` changes.
+- Rewrote `arkiv/*.md` to match the code, and wrote `docs/genome-pipeline.md`.
+- Ran the pipeline on GIAB HG002 on the VM and verified the decrypt round trip.
+
+**Issues the AI caught and fixed while testing:**
+- `head` under `pipefail` made the run fail.
+- `bcftools stats` needs `-s -` for per-sample het/hom.
+- A single stray `0/0` row in HG002 made the file look like a gVCF.
+- Entities are public, so health findings are now sealed to the patient instead of indexed.
+- The frontend didn't build: Next 14 can't read a TS config, x402 optional deps were missing, and `CONTRACTS.x.address` was used on plain strings.
+
+**Not done in this session:** the live Swarm upload and Arkiv write. They need a postage batch and a funded Rabdi key.
+
+---
+
 ## AI-Generated vs Human-Authored Content
 
 | File | AI-generated | Human-directed |
@@ -286,4 +313,4 @@ Full prompt text available in Claude Code session transcript.
 - No proprietary data used
 - AI was used for research synthesis, file writing, and git operations
 - Ecosystem concept, problem selection, and direction decisions made by human
-- Code (smart contracts, frontend) not yet written — to be tracked here as built
+- Genome pipeline, shared crypto/schemas, `/genome` + `/records` storage flow: AI-written under human direction (Session 4), see `docs/genome-pipeline.md`

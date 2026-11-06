@@ -1,13 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useReadContract } from "wagmi";
-import { useMiniKitAddress } from "@/hooks/useMiniKitAddress";
-import { MiniKit } from "@worldcoin/minikit-js";
+import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract } from "wagmi";
 import { CONTRACTS, CONSENT_MANAGER_ABI } from "@/lib/contracts";
 
 export default function ConsentPage() {
-  const address = useMiniKitAddress();
+  const { address } = useAccount();
   const [institution, setInstitution] = useState("");
   const [expireDays, setExpireDays] = useState(365);
   const [checkAddr, setCheckAddr] = useState("");
@@ -15,13 +13,14 @@ export default function ConsentPage() {
   const [mode, setMode] = useState<"grant" | "revoke" | "check">("grant");
   const [showRevokeConfirm, setShowRevokeConfirm] = useState(false);
 
-  const [loading, setLoading] = useState(false);
-  const [grantOk, setGrantOk] = useState(false);
-  const [revokeOk, setRevokeOk] = useState(false);
+  const { writeContract: grant, data: grantHash, isPending: granting } = useWriteContract();
+  const { writeContract: revoke, data: revokeHash, isPending: revoking } = useWriteContract();
+  const { isSuccess: grantOk } = useWaitForTransactionReceipt({ hash: grantHash });
+  const { isSuccess: revokeOk } = useWaitForTransactionReceipt({ hash: revokeHash });
 
   const { refetch: checkConsent } = useReadContract({
-    address: CONTRACTS.consentManager.address as `0x${string}`,
-    abi: CONTRACTS.consentManager.abi,
+    address: CONTRACTS.consentManager,
+    abi: CONSENT_MANAGER_ABI,
     functionName: "hasConsent",
     args: address && checkAddr ? [address, checkAddr as `0x${string}`] : undefined,
     query: { enabled: false },
@@ -29,44 +28,24 @@ export default function ConsentPage() {
 
   async function handleGrant() {
     if (!institution) return;
-    setLoading(true);
-    setGrantOk(false);
-    try {
-      const expiry = BigInt(Math.floor(Date.now() / 1000) + expireDays * 86400);
-      const { finalPayload } = await MiniKit.commandsAsync.sendTransaction({
-        transaction: [{
-          address: CONTRACTS.consentManager as `0x${string}`,
-          abi: CONSENT_MANAGER_ABI,
-          functionName: "grantConsent",
-          args: [institution as `0x${string}`, expiry, "0x" + "0".repeat(64) as `0x${string}`],
-        }],
-      });
-      if (finalPayload.status === "error") throw new Error(finalPayload.error_code);
-      setGrantOk(true);
-    } finally {
-      setLoading(false);
-    }
+    const expiry = BigInt(Math.floor(Date.now() / 1000) + expireDays * 86400);
+    grant({
+      address: CONTRACTS.consentManager,
+      abi: CONSENT_MANAGER_ABI,
+      functionName: "grantConsent",
+      args: [institution as `0x${string}`, expiry, "0x" + "0".repeat(64) as `0x${string}`],
+    });
   }
 
   async function handleRevoke() {
     if (!institution) return;
-    setLoading(true);
-    setRevokeOk(false);
-    try {
-      const { finalPayload } = await MiniKit.commandsAsync.sendTransaction({
-        transaction: [{
-          address: CONTRACTS.consentManager as `0x${string}`,
-          abi: CONSENT_MANAGER_ABI,
-          functionName: "revokeConsent",
-          args: [institution as `0x${string}`],
-        }],
-      });
-      if (finalPayload.status === "error") throw new Error(finalPayload.error_code);
-      setRevokeOk(true);
-    } finally {
-      setLoading(false);
-      setShowRevokeConfirm(false);
-    }
+    revoke({
+      address: CONTRACTS.consentManager,
+      abi: CONSENT_MANAGER_ABI,
+      functionName: "revokeConsent",
+      args: [institution as `0x${string}`],
+    });
+    setShowRevokeConfirm(false);
   }
 
   async function handleCheck() {
@@ -160,11 +139,11 @@ export default function ConsentPage() {
               <div className="flex gap-2">
                 <button
                   onClick={handleRevoke}
-                  disabled={loading}
+                  disabled={revoking}
                   className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-medium
                              hover:bg-red-500 transition disabled:opacity-50"
                 >
-                  {loading ? "Confirming…" : "Yes, revoke"}
+                  {revoking ? "Confirming…" : "Yes, revoke"}
                 </button>
                 <button
                   onClick={() => setShowRevokeConfirm(false)}
@@ -197,14 +176,14 @@ export default function ConsentPage() {
 
           <button
             onClick={mode === "grant" ? handleGrant : () => setShowRevokeConfirm(true)}
-            disabled={!institution || loading || (mode === "revoke" && showRevokeConfirm) || !CONTRACTS.consentManager}
+            disabled={!institution || granting || revoking || (mode === "revoke" && showRevokeConfirm) || !CONTRACTS.consentManager}
             className={`w-full px-6 py-3 rounded-lg font-semibold transition-all active:scale-[0.98] disabled:opacity-40 ${
               mode === "revoke"
                 ? "bg-red-600 hover:bg-red-500 text-white"
                 : "bg-genome-teal text-black hover:opacity-90 shadow-[0_0_20px_rgba(0,201,167,0.2)]"
             }`}
           >
-            {loading ? "Confirming…" : mode === "grant" ? "Grant Consent" : "Revoke Access"}
+            {granting || revoking ? "Confirming…" : mode === "grant" ? "Grant Consent" : "Revoke Access"}
           </button>
         </div>
       )}

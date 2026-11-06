@@ -1,0 +1,25 @@
+{
+  "name": "@genomechain/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./arkiv": "./src/arkiv.ts",
+    "./keys": "./src/keys.ts",
+    "./manifest": "./src/manifest.ts"
+  },
+  "dependencies": {
+    "@noble/ciphers": "^2.4.0",
+    "@noble/curves": "^2.4.0",
+    "@noble/hashes": "^2.4.0"
+  },
+  "devDependencies": {
+    "@arkiv-network/sdk": "^1.0.1",
+    "typescript": "^5.4.0",
+    "viem": "^2.17.0"
+  },
+  "peerDependencies": {
+    "@arkiv-network/sdk": "^1.0.1",
+    "viem": "^2.17.0"
+  }
+}

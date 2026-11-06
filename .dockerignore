@@ -1,0 +1,14 @@
+**/node_modules
+**/.next
+**/work
+**/out
+**/.env
+**/.env.*
+deploy
+research
+docs
+packages/frontend
+packages/contracts
+*.vcf
+*.vcf.gz
+*.tbi

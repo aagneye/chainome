@@ -1,193 +1,110 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { useRouter } from "next/navigation";
-import { MiniKit } from "@worldcoin/minikit-js";
+import type { ISuccessResult } from "@worldcoin/idkit";
 import { CONTRACTS, GENOME_REGISTRY_ABI } from "@/lib/contracts";
-// MiniKit verify payload stored by /verify page
-type ISuccessResult = { nullifier_hash: string; merkle_root: string; proof: string; verification_level: string; [k: string]: unknown };
-import { useMiniKitAddress } from "@/hooks/useMiniKitAddress";
+import type { GenomeView } from "@/lib/arkiv-server";
+import { usePatientKey } from "@/lib/use-patient-key";
+import { GenomePanel } from "@/components/GenomePanel";
 
-function detectFileType(name: string): string {
-  const lower = name.toLowerCase();
-  if (lower.endsWith(".vcf")) return "VCF";
-  if (lower.includes("23andme")) return "23andMe";
-  if (lower.includes("ancestry")) return "AncestryDNA";
-  return "Genomic Data";
-}
-
+/**
+ * Genome flow (whole-genome VCF up to 2 GB never passes through the browser):
+ *  1. Patient unlocks an encryption key from a wallet signature and gives the lab its public half.
+ *  2. The certified lab runs the pipeline: normalize → QC → split per chromosome → encrypt
+ *     → Swarm → Arkiv, then signs LabAttestation over the manifest's Swarm reference.
+ *  3. This page reads the result from Arkiv; the patient verifies a segment and anchors the
+ *     manifest on World Chain with their World ID proof (one genome per human).
+ */
 export default function GenomePage() {
-  const address = useMiniKitAddress();
+  const { address } = useAccount();
   const router = useRouter();
+  const patientKey = usePatientKey();
 
-  const [file, setFile] = useState<File | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [cid, setCid] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [statusMsg, setStatusMsg] = useState<string | null>(null);
-  const progressRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
+  const [genome, setGenome] = useState<GenomeView | null>(null);
   const [loading, setLoading] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  // Clean up interval on unmount
-  useEffect(() => () => { if (progressRef.current) clearInterval(progressRef.current); }, []);
+  const { writeContract, data: txHash, isPending } = useWriteContract();
+  const { isSuccess } = useWaitForTransactionReceipt({ hash: txHash });
 
-  const onDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const dropped = e.dataTransfer.files[0];
-    if (dropped) setFile(dropped);
-  }, []);
-
-  function fakeProgress() {
-    setProgress(0);
-    progressRef.current = setInterval(() => {
-      setProgress((p) => {
-        if (p >= 90) {
-          if (progressRef.current) clearInterval(progressRef.current);
-          return 90;
-        }
-        return p + Math.random() * 12;
-      });
-    }, 180);
-  }
-
-  async function uploadToIPFS(): Promise<string> {
-    const form = new FormData();
-    form.append("file", file!);
-    const res = await fetch("https://node.lighthouse.storage/api/v0/add", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${process.env.NEXT_PUBLIC_LIGHTHOUSE_API_KEY}` },
-      body: form,
-    });
-    if (!res.ok) throw new Error("IPFS upload failed");
-    const data = await res.json();
-    return data.Hash as string;
-  }
-
-  async function handleSubmit() {
-    if (!file || !address) return;
-    setError(null);
-    setStatusMsg(null);
-    setUploading(true);
-    fakeProgress();
-
+  const load = useCallback(async () => {
+    if (!address) return;
+    setLoading(true);
+    setLoadError(null);
     try {
-      const proofRaw = sessionStorage.getItem("wld_proof");
-      if (!proofRaw) {
-        router.push("/verify");
-        return;
-      }
-      const proof: ISuccessResult = JSON.parse(proofRaw);
-
-      setStatusMsg("Uploading to IPFS…");
-      const ipfsCid = await uploadToIPFS();
-
-      if (progressRef.current) clearInterval(progressRef.current);
-      setProgress(100);
-      setCid(ipfsCid);
-
-      setStatusMsg("Getting lab attestation…");
-      const attestRes = await fetch("/api/lab-attest", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          nullifierHash: proof.nullifier_hash,
-          genomeCID: ipfsCid,
-        }),
-      });
-      if (!attestRes.ok) throw new Error("Lab attestation failed");
-      const { uid } = await attestRes.json();
-      setStatusMsg(`Attested ✓ (${uid.slice(0, 10)}…)`);
-
-      setStatusMsg("Submitting to WorldChain…");
-      setLoading(true);
-      const { finalPayload } = await MiniKit.commandsAsync.sendTransaction({
-        transaction: [{
-          address: CONTRACTS.genomeRegistry as `0x${string}`,
-          abi: GENOME_REGISTRY_ABI,
-          functionName: "submitGenome",
-          args: [
-            address as `0x${string}`,
-            BigInt(proof.merkle_root),
-            BigInt(proof.nullifier_hash),
-            proof.proof.split(",").map(BigInt) as [bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint],
-            ipfsCid,
-          ],
-        }],
-      });
-      if (finalPayload.status === "error") throw new Error(finalPayload.error_code);
-      setStatusMsg("Genome submitted ✓ (tx: " + finalPayload.transaction_id.slice(0, 10) + "...)");
-      setSubmitted(true);
-    } catch (err) {
-      if (progressRef.current) clearInterval(progressRef.current);
-      setProgress(0);
-      setStatusMsg(null);
-      setError(err instanceof Error ? err.message : "Upload failed");
+      const res = await fetch(`/api/genome?patient=${address}`);
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error ?? "Arkiv query failed");
+      setGenome(body.genome);
+    } catch (e) {
+      setLoadError(e instanceof Error ? e.message : "Arkiv query failed");
     } finally {
-      setUploading(false);
       setLoading(false);
     }
+  }, [address]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  async function copy(label: string, text: string) {
+    await navigator.clipboard.writeText(text);
+    setCopied(label);
+    setTimeout(() => setCopied(null), 2000);
   }
 
-  async function copyCid() {
-    if (!cid) return;
-    await navigator.clipboard.writeText(cid);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  function anchor() {
+    if (!genome || !address) return;
+    setError(null);
+    const proofRaw = sessionStorage.getItem("wld_proof");
+    if (!proofRaw) {
+      router.push("/verify");
+      return;
+    }
+    const proof: ISuccessResult = JSON.parse(proofRaw);
+    writeContract(
+      {
+        address: CONTRACTS.genomeRegistry,
+        abi: GENOME_REGISTRY_ABI,
+        functionName: "submitGenome",
+        args: [
+          address,
+          BigInt(proof.merkle_root),
+          BigInt(proof.nullifier_hash),
+          proof.proof.split(",").map(BigInt) as unknown as readonly [bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint],
+          genome.dataset.manifestRef, // the exact string the lab attested
+        ],
+      },
+      { onError: (e) => setError(e.message.split("\n")[0]) },
+    );
   }
 
-  if (submitted) {
+  const labCommand = patientKey.publicKey
+    ? `scripts/run.sh --vcf /gc/in/<patient>.vcf.gz --patient ${address} --patient-pubkey ${patientKey.publicKey} --nullifier <nullifier_hash>`
+    : "";
+
+  if (isSuccess && genome) {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center gap-6 px-4 text-center">
-        {/* Success glow */}
-        <div className="relative">
-          <div
-            className="absolute inset-0 rounded-full blur-2xl opacity-30"
-            style={{ background: "#00c9a7" }}
-          />
-          <div className="relative w-20 h-20 rounded-full bg-genome-card border-2 border-genome-teal flex items-center justify-center">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#00c9a7" strokeWidth="2" className="w-10 h-10">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-            </svg>
-          </div>
+        <div className="relative w-20 h-20 rounded-full bg-genome-card border-2 border-genome-teal flex items-center justify-center">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#00c9a7" strokeWidth="2" className="w-10 h-10">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+          </svg>
         </div>
-
         <div>
           <h2 className="text-3xl font-extrabold text-white mb-1">Genome Registered</h2>
           <div className="inline-block animate-bounce mt-2 px-4 py-1.5 rounded-full bg-genome-teal text-black font-bold text-sm">
             500 GNM Minted!
           </div>
         </div>
-
-        {cid && (
-          <div className="w-full max-w-md bg-genome-card border border-genome-border rounded-xl p-4">
-            <p className="text-xs text-gray-500 mb-2">IPFS Content ID</p>
-            <div className="flex items-center gap-2">
-              <code className="text-xs text-genome-teal break-all flex-1 leading-relaxed">{cid}</code>
-              <button
-                onClick={copyCid}
-                className="shrink-0 p-1.5 rounded-lg border border-genome-border hover:border-genome-teal transition text-gray-400 hover:text-genome-teal"
-                title="Copy CID"
-              >
-                {copied ? (
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-genome-teal">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                  </svg>
-                ) : (
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" />
-                  </svg>
-                )}
-              </button>
-            </div>
-          </div>
-        )}
-
+        <div className="w-full max-w-md bg-genome-card border border-genome-border rounded-xl p-4 text-left">
+          <p className="text-xs text-gray-500 mb-2">Swarm manifest anchored on World Chain</p>
+          <code className="text-xs text-genome-teal break-all">{genome.dataset.manifestRef}</code>
+        </div>
         <button
           onClick={() => router.push("/dashboard")}
           className="px-6 py-3 rounded-lg bg-genome-teal text-black font-semibold hover:opacity-90 transition"
@@ -199,91 +116,102 @@ export default function GenomePage() {
   }
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center gap-8 px-4">
-      <div className="text-center max-w-sm">
-        <h2 className="text-2xl font-bold text-white mb-2">Submit Genome</h2>
+    <main className="min-h-screen flex flex-col items-center gap-8 px-4 py-16">
+      <div className="text-center max-w-xl">
+        <h2 className="text-2xl font-bold text-white mb-2">Your Genome</h2>
         <p className="text-gray-400 text-sm leading-relaxed">
-          Upload your SNP/VCF file. It is encrypted and stored on IPFS.
-          Only the content ID is written on-chain via World ID proof.
+          Your lab normalizes your whole-genome VCF to GRCh38, splits it per chromosome and encrypts each part to your key.
+          The encrypted parts live on Swarm, their index on Arkiv, and one reference on World Chain.
         </p>
       </div>
 
-      {/* Drag-drop zone */}
-      <div
-        onDrop={onDrop}
-        onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-        onDragLeave={() => setIsDragging(false)}
-        onClick={() => document.getElementById("file-input")?.click()}
-        className="w-full max-w-md border-2 border-dashed rounded-2xl p-10 text-center cursor-pointer transition-all duration-200"
-        style={{
-          borderColor: isDragging ? "#00c9a7" : file ? "#00c9a7" : "#182035",
-          backgroundColor: isDragging ? "rgba(0,201,167,0.05)" : "#0e1424",
-          boxShadow: isDragging ? "0 0 24px rgba(0,201,167,0.2)" : "none",
-        }}
-      >
-        {file ? (
-          <div className="flex flex-col items-center gap-3">
-            {/* File type badge */}
-            <span className="inline-block px-3 py-1 rounded-full bg-genome-teal text-black text-xs font-bold">
-              {detectFileType(file.name)}
-            </span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="#00c9a7" strokeWidth="1.5" className="w-10 h-10">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-            </svg>
-            <p className="text-genome-teal font-semibold text-sm">{file.name}</p>
-            <p className="text-xs text-gray-500">
-              {(file.size / 1024).toFixed(1)} KB &middot; click to change
-            </p>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center gap-3">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#182035" strokeWidth="1.5" className="w-12 h-12">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-            </svg>
-            <div>
-              <p className="text-gray-400 text-sm font-medium">Drop your genome file here</p>
-              <p className="text-gray-600 text-xs mt-1">Accepts .vcf · .snp · .txt (23andMe / AncestryDNA)</p>
-            </div>
-          </div>
-        )}
-        <input
-          id="file-input"
-          type="file"
-          accept=".vcf,.snp,.txt"
-          className="hidden"
-          onChange={(e) => e.target.files?.[0] && setFile(e.target.files[0])}
-        />
-      </div>
+      {!address && <p className="text-gray-400 text-sm">Connect your wallet to continue.</p>}
 
-      {/* Progress bar + status */}
-      {(uploading || progress > 0) && (
-        <div className="w-full max-w-md">
-          <div className="flex justify-between text-xs text-gray-500 mb-1.5">
-            <span>{statusMsg ?? "Uploading to IPFS via Lighthouse…"}</span>
-            {progress < 100 && <span>{Math.round(progress)}%</span>}
+      {address && (
+        <section className="w-full max-w-3xl bg-genome-card border border-genome-border rounded-2xl p-6 space-y-4">
+          <div className="flex items-center gap-3">
+            <Step n={1} done={!!patientKey.publicKey} />
+            <h3 className="text-white font-semibold">Give your lab your encryption key</h3>
           </div>
-          <div className="h-1.5 w-full rounded-full bg-genome-border overflow-hidden">
-            <div
-              className="h-full rounded-full bg-genome-teal transition-all duration-300"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-        </div>
+          {!patientKey.publicKey ? (
+            <button
+              onClick={patientKey.derive}
+              disabled={patientKey.deriving}
+              className="px-5 py-2.5 rounded-xl bg-genome-teal text-black font-bold text-sm hover:opacity-90 transition disabled:opacity-40"
+            >
+              {patientKey.deriving ? "Waiting for signature…" : "Create key from my wallet (sign, free)"}
+            </button>
+          ) : (
+            <div className="space-y-3">
+              <KeyRow label="Public key" value={patientKey.publicKey} copied={copied === "pk"} onCopy={() => copy("pk", patientKey.publicKey!)} />
+              <KeyRow label="Lab command" value={labCommand} copied={copied === "cmd"} onCopy={() => copy("cmd", labCommand)} />
+              <p className="text-xs text-gray-500">
+                Only the public half leaves this page. The private key is recomputed from your signature whenever you need it and is never stored.
+              </p>
+            </div>
+          )}
+          {patientKey.error && <p className="text-red-400 text-xs">{patientKey.error}</p>}
+        </section>
       )}
 
-      {error && <p className="text-red-400 text-sm">{error}</p>}
+      {address && (
+        <>
+          {genome ? (
+            <GenomePanel genome={genome} patientKey={patientKey} />
+          ) : (
+            <section className="w-full max-w-3xl bg-genome-card border border-dashed border-genome-border rounded-2xl p-6 text-center space-y-2">
+              <div className="flex items-center justify-center gap-3">
+                <Step n={2} done={false} />
+                <h3 className="text-white font-semibold">Waiting for your lab</h3>
+              </div>
+              <p className="text-gray-500 text-sm">
+                {loading ? "Checking Arkiv…" : loadError ? `Arkiv: ${loadError}` : "No genome for this wallet on Arkiv yet."}
+              </p>
+              <button onClick={load} className="text-genome-teal text-sm hover:underline">
+                Refresh
+              </button>
+            </section>
+          )}
 
-      <button
-        onClick={handleSubmit}
-        disabled={!file || uploading || loading || !CONTRACTS.genomeRegistry}
-        className="px-8 py-3 rounded-xl bg-genome-teal text-black font-bold text-sm hover:opacity-90 transition disabled:opacity-40"
-      >
-        {uploading
-          ? (statusMsg ?? "Uploading…")
-          : loading
-          ? "Confirming on-chain…"
-          : "Submit Genome · Earn 500 GNM"}
-      </button>
+          {genome && (
+            <section className="w-full max-w-3xl flex flex-col items-center gap-3">
+              <button
+                onClick={anchor}
+                disabled={isPending || !CONTRACTS.genomeRegistry || !genome.dataset.qcPass}
+                className="px-8 py-3 rounded-xl bg-genome-teal text-black font-bold text-sm hover:opacity-90 transition disabled:opacity-40"
+              >
+                {isPending ? "Confirming on-chain…" : "Anchor on World Chain · Earn 500 GNM"}
+              </button>
+              <p className="text-xs text-gray-500">Requires your World ID proof and the lab&apos;s attestation of this manifest.</p>
+              {error && <p className="text-red-400 text-sm">{error}</p>}
+            </section>
+          )}
+        </>
+      )}
     </main>
+  );
+}
+
+function Step({ n, done }: { n: number; done: boolean }) {
+  return (
+    <span
+      className={`w-7 h-7 shrink-0 rounded-full flex items-center justify-center text-xs font-bold ${done ? "bg-genome-teal text-black" : "border border-genome-border text-gray-400"}`}
+    >
+      {done ? "✓" : n}
+    </span>
+  );
+}
+
+function KeyRow({ label, value, copied, onCopy }: { label: string; value: string; copied: boolean; onCopy: () => void }) {
+  return (
+    <div>
+      <p className="text-[10px] uppercase tracking-wide text-gray-500 mb-1">{label}</p>
+      <div className="flex items-center gap-2">
+        <code className="flex-1 text-xs text-genome-teal break-all bg-genome-navy/60 rounded-lg px-3 py-2">{value}</code>
+        <button onClick={onCopy} className="shrink-0 px-3 py-2 rounded-lg border border-genome-border text-xs text-gray-300 hover:border-genome-teal">
+          {copied ? "Copied" : "Copy"}
+        </button>
+      </div>
+    </div>
   );
 }

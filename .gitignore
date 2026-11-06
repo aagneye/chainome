@@ -1,6 +1,7 @@
 node_modules/
 .env
-.env.local
+.env.*
+!.env.example
 dist/
 out/
 .next/
@@ -8,3 +9,28 @@ cache/
 artifacts/
 typechain-types/
 coverage/
+
+# Deployment / VM access — never commit (public repo)
+deploy/.env
+deploy/*.pem
+*.pem
+*.key
+id_*
+
+# Genomic data and reference files — never commit
+*.vcf
+*.vcf.gz
+*.vcf.bgz
+*.tbi
+*.csi
+*.bam
+*.cram
+*.fa
+*.fa.gz
+*.fai
+*.chain.gz
+ref/
+packages/pipeline/work/
+packages/pipeline/out/
+tsconfig.tsbuildinfo
+*.tsbuildinfo
