@@ -102,10 +102,22 @@ export const STUDY_REGISTRY_ABI = [
   },
 ] as const;
 
+export const DATASET_REGISTRY_ABI = [
+  "function publishDataset(string name, string slug, string cid, string description, string category, uint256 priceInGNM) returns (uint256)",
+  "function purchaseAccess(uint256 id)",
+  "function getDataset(uint256 id) view returns (tuple(uint256 id, address creator, string name, string slug, string cid, string description, string category, address tokenAddress, uint256 priceInGNM, uint256 createdAt))",
+  "function getBySlug(string slug) view returns (tuple(uint256 id, address creator, string name, string slug, string cid, string description, string category, address tokenAddress, uint256 priceInGNM, uint256 createdAt))",
+  "function datasetCount() view returns (uint256)",
+  "function hasAccess(uint256 id, address user) view returns (bool)",
+  "event DatasetPublished(uint256 indexed id, address indexed creator, string slug, address tokenAddress)",
+  "event DatasetPurchased(uint256 indexed id, address indexed buyer, uint256 paid)",
+] as const;
+
 export const CONTRACTS = {
-  genomeRegistry: process.env.NEXT_PUBLIC_GENOME_REGISTRY  as `0x${string}`,
-  recordVault:    process.env.NEXT_PUBLIC_RECORD_VAULT     as `0x${string}`,
-  consentManager: process.env.NEXT_PUBLIC_CONSENT_MANAGER  as `0x${string}`,
-  healthToken:    process.env.NEXT_PUBLIC_HEALTH_TOKEN     as `0x${string}`,
-  studyRegistry:  process.env.NEXT_PUBLIC_STUDY_REGISTRY   as `0x${string}`,
+  genomeRegistry:  process.env.NEXT_PUBLIC_GENOME_REGISTRY   as `0x${string}`,
+  recordVault:     process.env.NEXT_PUBLIC_RECORD_VAULT      as `0x${string}`,
+  consentManager:  process.env.NEXT_PUBLIC_CONSENT_MANAGER   as `0x${string}`,
+  healthToken:     process.env.NEXT_PUBLIC_HEALTH_TOKEN      as `0x${string}`,
+  studyRegistry:   process.env.NEXT_PUBLIC_STUDY_REGISTRY    as `0x${string}`,
+  datasetRegistry: (process.env.NEXT_PUBLIC_DATASET_REGISTRY ?? "") as `0x${string}`,
 };
