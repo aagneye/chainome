@@ -111,7 +111,7 @@ export function GenomeUpload({
       {!jobId ? (
         <>
           <label className="block w-full border-2 border-dashed border-genome-border rounded-xl p-6 text-center cursor-pointer hover:border-genome-teal transition">
-            <input type="file" accept=".vcf,.gz,.vcf.gz,.txt,text/plain,application/gzip,application/x-gzip" style={{ position: "absolute", opacity: 0, width: 0, height: 0, pointerEvents: "none" }} onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+            <input type="file" style={{ position: "absolute", opacity: 0, width: 0, height: 0, pointerEvents: "none" }} onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
             {file ? (
               <span className="text-genome-teal text-sm font-semibold">
                 {file.name} · {(file.size / 1e6).toFixed(1)} MB
