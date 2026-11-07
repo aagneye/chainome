@@ -10,8 +10,11 @@
 import http from "http";
 import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
 import crypto from "crypto";
 import { ethers } from "ethers";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const PORT = 3333;
 const LAB_PRIVATE_KEY = process.env.LAB_PRIVATE_KEY;
