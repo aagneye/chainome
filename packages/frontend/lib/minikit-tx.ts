@@ -45,8 +45,31 @@ export async function waitForUserOp(
 
 /** Send one contract call (pre-encoded calldata) from the user's World App wallet and wait for it. */
 export async function sendCall(to: `0x${string}`, data: Hex, opts?: Parameters<typeof waitForUserOp>[1]): Promise<TxResult> {
+  // MiniKit.sendTransaction only accepts chainId 480 (mainnet). On World Chain Sepolia (4801),
+  // fall back to the EIP-1193 provider that World App injects as window.ethereum.
+  const eth = typeof window !== "undefined" ? (window as unknown as { ethereum?: { request: (a: { method: string; params?: unknown[] }) => Promise<unknown> } }).ethereum : undefined;
+  if (CHAIN_ID !== 480 && eth) {
+    // Switch to World Chain Sepolia (4801) if needed
+    try {
+      await eth.request({ method: "wallet_switchEthereumChain", params: [{ chainId: "0x12C1" }] });
+    } catch {
+      await eth.request({
+        method: "wallet_addEthereumChain",
+        params: [{ chainId: "0x12C1", chainName: "World Chain Sepolia", nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 }, rpcUrls: ["https://worldchain-sepolia.g.alchemy.com/public"] }],
+      });
+    }
+    const txHash = (await eth.request({ method: "eth_sendTransaction", params: [{ to, data }] })) as string;
+    for (let i = 0; i < 30; i++) {
+      await new Promise((r) => setTimeout(r, 2000));
+      const receipt = (await eth.request({ method: "eth_getTransactionReceipt", params: [txHash] })) as { status?: string } | null;
+      if (receipt?.status === "0x1") return { userOpHash: txHash, transactionHash: txHash };
+      if (receipt?.status === "0x0") throw new Error("Transaction failed on World Chain");
+    }
+    return { userOpHash: txHash };
+  }
   if (!MiniKit.isInstalled()) throw new NotInWorldAppError();
   const { data: result } = await MiniKit.sendTransaction({ chainId: CHAIN_ID, transactions: [{ to, data }] });
+  if ((result as { error_code?: string }).error_code) throw new Error((result as { error_code: string }).error_code);
   const userOpHash = (result as { userOpHash: string }).userOpHash;
   return { userOpHash, transactionHash: await waitForUserOp(userOpHash, opts) };
 }
