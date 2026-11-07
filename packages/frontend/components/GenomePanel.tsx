@@ -33,9 +33,12 @@ export function GenomePanel({
   const [checks, setChecks] = useState<Record<string, SegmentCheck>>({});
   const [error, setError] = useState<string | null>(null);
 
+  const isDryRun = dataset.manifestRef.startsWith("dry-run:");
+
   useEffect(() => {
+    if (isDryRun) return; // manifest not on Swarm in dry-run mode
     fetchManifest(dataset.manifestRef).then(setManifest).catch((e) => setError(e.message));
-  }, [dataset.manifestRef]);
+  }, [dataset.manifestRef, isDryRun]);
 
   // The lab encrypted to the key the patient gave it. If today's signature derives a different
   // key (e.g. a wallet that doesn't sign deterministically), say so instead of failing per segment.
@@ -96,7 +99,11 @@ export function GenomePanel({
       )}
 
       <div className="text-xs text-gray-500">
-        Manifest on Swarm <code className="text-genome-teal">{short(dataset.manifestRef, 12)}</code> — anchored on World Chain via GenomeRegistry.
+        {isDryRun ? (
+          <span className="text-yellow-400">Indexed on Arkiv · no Swarm storage (dry-run mode)</span>
+        ) : (
+          <>Manifest on Swarm <code className="text-genome-teal">{short(dataset.manifestRef, 12)}</code> — anchored on World Chain via GenomeRegistry.</>
+        )}
       </div>
 
       {!patientKey.key && (
@@ -135,9 +142,11 @@ export function GenomePanel({
                   <td className="px-3 py-2 font-mono text-white">{s.chrom}</td>
                   <td className="px-3 py-2 text-right text-gray-300">{Number(s.variantCount).toLocaleString()}</td>
                   <td className="px-3 py-2 text-right text-gray-400">{mb(s.cipherBytes)}</td>
-                  <td className="px-3 py-2 font-mono text-gray-500">{short(s.swarmRef)}</td>
+                  <td className="px-3 py-2 font-mono text-gray-500">{isDryRun ? <span className="text-yellow-600">dry-run</span> : short(s.swarmRef)}</td>
                   <td className="px-3 py-2 text-right">
-                    {check ? (
+                    {isDryRun ? (
+                      <span className="text-gray-600 text-xs">no Swarm</span>
+                    ) : check ? (
                       <button onClick={() => save(check)} className="text-genome-teal hover:underline" title="Save decrypted VCF">
                         {check.cipherHashOk && check.plainHashOk ? "✓ verified · save" : "✗ hash mismatch"}
                       </button>

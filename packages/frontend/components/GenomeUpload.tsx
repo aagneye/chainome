@@ -166,7 +166,7 @@ export function GenomeUpload({
           </p>
           {state === "done" && status?.result?.dryRun && (
             <p className="text-xs text-yellow-300">
-              Test mode: encrypted and checked ({status.result.qc?.variantCount?.toLocaleString()} variants), but not stored on Swarm/Arkiv yet.
+              Test mode: encrypted and indexed on Arkiv ({status.result.qc?.variantCount?.toLocaleString()} variants){status.result.datasetKey ? ` · dataset ${status.result.datasetKey.slice(0, 10)}…` : ""} — no Swarm storage.
             </p>
           )}
           {state === "failed" && <p className="text-xs text-red-400">{status?.error}</p>}
