@@ -48,6 +48,21 @@ export default function GenomePage() {
     }
   }, [address]);
 
+  // After job completes, Arkiv indexer may lag a few seconds. Retry with backoff.
+  const loadAfterJob = useCallback(async () => {
+    const delays = [3000, 6000, 12000, 20000];
+    for (const delay of delays) {
+      await new Promise((r) => setTimeout(r, delay));
+      if (!address) return;
+      try {
+        const res = await fetch(`/api/genome?patient=${address}`);
+        const body = await res.json();
+        if (res.ok && body.genome) { setGenome(body.genome); return; }
+      } catch { /* retry */ }
+    }
+    load(); // final attempt, show whatever result
+  }, [address, load]);
+
   useEffect(() => {
     load();
   }, [load]);
@@ -148,7 +163,7 @@ export default function GenomePage() {
             </button>
           ) : (
             <div className="space-y-3">
-              <GenomeUpload patient={address} patientPublicKey={patientKey.publicKey} onDone={load} />
+              <GenomeUpload patient={address} patientPublicKey={patientKey.publicKey} onDone={loadAfterJob} />
               <details className="text-xs text-gray-500">
                 <summary className="cursor-pointer hover:text-gray-300">Your lab already has the file? Give them your key instead</summary>
                 <div className="mt-3 space-y-3">
