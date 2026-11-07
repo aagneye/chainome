@@ -19,7 +19,7 @@ export default function VerifyPage() {
 
   function onSuccess(result: ISuccessResult) {
     setStatus("success");
-    sessionStorage.setItem("wld_proof", JSON.stringify(result));
+    localStorage.setItem("wld_proof", JSON.stringify(result));
     setTimeout(() => router.push("/genome"), 1200);
   }
 

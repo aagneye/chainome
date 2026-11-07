@@ -103,7 +103,7 @@ export default function DashboardPage() {
   });
 
   const hasGenome =
-    typeof window !== "undefined" && !!sessionStorage.getItem("wld_proof");
+    typeof window !== "undefined" && !!localStorage.getItem("wld_proof");
   const gnmNum = gnmBalance ? Number(gnmBalance.formatted) : 0;
   const recordNum = recordCount ? Number(recordCount) : 0;
 

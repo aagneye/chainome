@@ -62,7 +62,7 @@ export default function InsightsPage() {
   // Trigger progress bar transitions after mount
   useEffect(() => { setMounted(true); }, []);
 
-  const proofRaw = typeof window !== "undefined" ? sessionStorage.getItem("wld_proof") : null;
+  const proofRaw = typeof window !== "undefined" ? localStorage.getItem("wld_proof") : null;
   const nullifierHash = proofRaw ? JSON.parse(proofRaw).nullifier_hash : null;
 
   const { data: genomeCID } = useReadContract({

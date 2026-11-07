@@ -61,7 +61,7 @@ export default function GenomePage() {
   async function anchor() {
     if (!genome || !address) return;
     setError(null);
-    const proofRaw = sessionStorage.getItem("wld_proof");
+    const proofRaw = localStorage.getItem("wld_proof");
     if (!proofRaw) {
       router.push("/verify");
       return;

@@ -42,7 +42,7 @@ export default function RecordsPage() {
       const sealed = await encryptForPatient(file, patientKey.publicKey);
       setUploadPct(40);
 
-      const nullifier: string | undefined = JSON.parse(sessionStorage.getItem("wld_proof") ?? "{}").nullifier_hash;
+      const nullifier: string | undefined = JSON.parse(localStorage.getItem("wld_proof") ?? "{}").nullifier_hash;
       const form = new FormData();
       form.append("cipher", new Blob([sealed.cipher as BlobPart]));
       form.append(

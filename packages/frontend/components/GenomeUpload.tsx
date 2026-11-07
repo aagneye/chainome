@@ -45,9 +45,23 @@ export function GenomeUpload({
   const [status, setStatus] = useState<JobStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [loadingDemo, setLoadingDemo] = useState(false);
   const xhrRef = useRef<XMLHttpRequest | null>(null);
 
   useEffect(() => () => xhrRef.current?.abort(), []);
+
+  async function loadDemoGenome() {
+    setLoadingDemo(true);
+    try {
+      const res = await fetch("/test_genome.vcf");
+      const blob = await res.blob();
+      setFile(new File([blob], "test_genome.vcf", { type: "text/plain" }));
+    } catch {
+      setError("Could not load demo genome");
+    } finally {
+      setLoadingDemo(false);
+    }
+  }
 
   // Follow the job until it finishes.
   useEffect(() => {
@@ -76,7 +90,7 @@ export function GenomeUpload({
     setError(null);
     setBusy(true);
     try {
-      const nullifier: string | undefined = JSON.parse(sessionStorage.getItem("wld_proof") ?? "{}").nullifier_hash;
+      const nullifier: string | undefined = JSON.parse(localStorage.getItem("wld_proof") ?? "{}").nullifier_hash;
       const res = await fetch("/api/genome/jobs", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -120,6 +134,15 @@ export function GenomeUpload({
               <span className="text-gray-400 text-sm">Choose your genome file (.vcf / .vcf.gz / 23andMe .txt, up to 2 GB)</span>
             )}
           </label>
+          {!file && (
+            <button
+              onClick={loadDemoGenome}
+              disabled={loadingDemo}
+              className="w-full py-2 rounded-xl border border-genome-teal text-genome-teal text-sm font-semibold hover:bg-genome-teal/10 transition disabled:opacity-40"
+            >
+              {loadingDemo ? "Loading…" : "Use demo genome (18-SNP synthetic GRCh38)"}
+            </button>
+          )}
           {busy && (
             <div className="h-1.5 w-full rounded-full bg-genome-border overflow-hidden">
               <div className="h-full bg-genome-teal transition-all" style={{ width: `${pct}%` }} />
