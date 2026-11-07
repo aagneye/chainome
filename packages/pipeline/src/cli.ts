@@ -168,9 +168,10 @@ async function main() {
     log("attest", "skipped (no --nullifier)");
   }
 
+  const bigIntReplacer = (_k: string, v: unknown) => (typeof v === "bigint" ? v.toString() : v);
   const result = { runId, manifestRef, ...ark, attestTx, segments: readBack };
-  await writeFile(join(dir, "result.json"), JSON.stringify(result, null, 2));
-  if (args.result) await writeFile(args.result, JSON.stringify({ ...result, dryRun: false, qc: manifest.qc }, null, 2));
+  await writeFile(join(dir, "result.json"), JSON.stringify(result, bigIntReplacer, 2));
+  if (args.result) await writeFile(args.result, JSON.stringify({ ...result, dryRun: false, qc: manifest.qc }, bigIntReplacer, 2));
 
   console.log("\n── done ─────────────────────────────────────────────");
   console.log(`manifestRef  ${manifestRef}   ← submit this in GenomeRegistry.submitGenome`);
