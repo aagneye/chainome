@@ -118,9 +118,22 @@ async function main() {
       sha256Plain: enc.sha256Plain, sha256Cipher: enc.sha256Cipher, swarmRef: "dry-run", wrappedKey,
     }));
     await writeFile(join(dir, "manifest.json"), JSON.stringify(manifest, null, 2));
-    if (args.result) {
-      const summary = { runId, dryRun: true, qc: manifest.qc, segments: manifest.segments.map((s) => ({ chrom: s.chrom, variants: s.variantCount, cipherBytes: s.cipherBytes })) };
-      await writeFile(args.result, JSON.stringify(summary, null, 2));
+
+    // Still write to Arkiv so the genome page shows real metadata (Swarm refs are placeholder).
+    const dryManifestRef = `dry-run:${manifest.source.sha256.slice(2, 18)}`;
+    try {
+      const ark = await writeGenome(manifest, dryManifestRef, sealedFeatures);
+      log("arkiv", `dataset ${ark.datasetKey} (dry-run, no Swarm)`);
+      if (args.result) {
+        const summary = { runId, dryRun: true, qc: manifest.qc, manifestRef: dryManifestRef, ...ark, segments: manifest.segments.map((s) => ({ chrom: s.chrom, variants: s.variantCount, cipherBytes: s.cipherBytes })) };
+        await writeFile(args.result, JSON.stringify(summary, null, 2));
+      }
+    } catch (e) {
+      log("arkiv", `skipped (${e instanceof Error ? e.message : e})`);
+      if (args.result) {
+        const summary = { runId, dryRun: true, qc: manifest.qc, segments: manifest.segments.map((s) => ({ chrom: s.chrom, variants: s.variantCount, cipherBytes: s.cipherBytes })) };
+        await writeFile(args.result, JSON.stringify(summary, null, 2));
+      }
     }
     log("done", `dry run — manifest at ${join(dir, "manifest.json")}`);
     return;
