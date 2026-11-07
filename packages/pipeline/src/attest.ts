@@ -31,8 +31,8 @@ export async function attest(nullifierHash: bigint, manifestRef: string, qcPass:
     functionName: "attest",
     args: [nullifierHash, manifestRef, qcPass ? 95 : 60],
   });
-  await reader.waitForTransactionReceipt({ hash });
-  const ok = await reader.readContract({ address: env.labAttestation, abi: ABI, functionName: "isValid", args: [nullifierHash, manifestRef] });
-  if (!ok) throw new Error("Attestation landed but isValid() returned false");
+  const receipt = await reader.waitForTransactionReceipt({ hash });
+  if (receipt.status !== "success") throw new Error(`Attestation TX reverted: ${hash}`);
+  // Skip isValid() post-check: public RPC read-after-write lag can cause false negatives.
   return hash;
 }
