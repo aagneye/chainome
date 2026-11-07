@@ -201,15 +201,24 @@ export default function GenomePage() {
 
           {genome && (
             <section className="w-full max-w-3xl flex flex-col items-center gap-3">
-              <button
-                onClick={anchor}
-                disabled={tx.isPending || !CONTRACTS.genomeRegistry || !genome.dataset.qcPass}
-                className="px-8 py-3 rounded-xl bg-genome-teal text-black font-bold text-sm hover:opacity-90 transition disabled:opacity-40"
-              >
-                {tx.isPending ? "Confirming on-chain…" : "Anchor on World Chain · Earn 500 GNM"}
-              </button>
-              <p className="text-xs text-gray-500">Requires your World ID proof and the lab&apos;s attestation of this manifest.</p>
-              {(error ?? tx.error) && <p className="text-red-400 text-sm">{error ?? tx.error}</p>}
+              {genome.dataset.manifestRef.startsWith("dry-run:") ? (
+                <div className="w-full rounded-xl border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-xs text-yellow-300 text-center">
+                  <p className="font-semibold mb-1">Anchoring unavailable in demo mode</p>
+                  <p className="text-yellow-400/80">A real Swarm storage batch is needed to generate a valid manifest reference. The lab attestation and World Chain anchoring require a permanent CID, not a dry-run placeholder.</p>
+                </div>
+              ) : (
+                <>
+                  <button
+                    onClick={anchor}
+                    disabled={tx.isPending || !CONTRACTS.genomeRegistry || !genome.dataset.qcPass}
+                    className="px-8 py-3 rounded-xl bg-genome-teal text-black font-bold text-sm hover:opacity-90 transition disabled:opacity-40"
+                  >
+                    {tx.isPending ? "Confirming on-chain…" : "Anchor on World Chain · Earn 500 GNM"}
+                  </button>
+                  <p className="text-xs text-gray-500">Requires your World ID proof and the lab&apos;s attestation of this manifest.</p>
+                  {(error ?? tx.error) && <p className="text-red-400 text-sm">{error ?? tx.error}</p>}
+                </>
+              )}
             </section>
           )}
         </>

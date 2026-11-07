@@ -23,7 +23,7 @@ contract GenomeRegistry {
     HealthToken    public immutable token;
     LabAttestation public immutable labAttestation;
     uint256        public immutable externalNullifierHash;
-    uint256     internal constant GROUP_ID = 1; // 1 = Orb-verified
+    uint256     internal constant GROUP_ID = 0; // 0 = Device-verified (hackathon testing)
 
     mapping(uint256 nullifierHash => bool) public nullifierUsed;
     mapping(uint256 nullifierHash => string) public genomeCID;
