@@ -69,7 +69,7 @@ export async function sendCall(to: `0x${string}`, data: Hex, opts?: Parameters<t
   }
   if (!MiniKit.isInstalled()) throw new NotInWorldAppError();
   const { data: result } = await MiniKit.sendTransaction({ chainId: CHAIN_ID, transactions: [{ to, data }] });
-  if ((result as { error_code?: string }).error_code) throw new Error((result as { error_code: string }).error_code);
+  if ((result as unknown as { error_code?: string }).error_code) throw new Error((result as unknown as { error_code: string }).error_code);
   const userOpHash = (result as { userOpHash: string }).userOpHash;
   return { userOpHash, transactionHash: await waitForUserOp(userOpHash, opts) };
 }
